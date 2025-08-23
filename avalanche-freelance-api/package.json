@@ -1,0 +1,57 @@
+{
+  "name": "avalanche-freelance-api",
+  "version": "1.0.0",
+  "description": "Production-ready Express API for decentralized freelance marketplace with escrow on Avalanche C-Chain",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "cors": "^2.8.5",
+    "helmet": "^8.1.0",
+    "zod": "^4.0.17",
+    "dotenv": "^17.2.1",
+    "pino": "^9.9.0",
+    "pino-pretty": "^13.1.1",
+    "ethers": "^6.15.0",
+    "axios": "^1.11.0",
+    "mongoose": "^8.18.0",
+    "@avalabs/avacloud-sdk": "^0.13.2"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "@types/express": "^5.0.3",
+    "@types/cors": "^2.8.19",
+    "@types/jest": "^30.0.0",
+    "@types/supertest": "^6.0.3",
+    "typescript": "^5.9.2",
+    "ts-node-dev": "^2.0.0",
+    "jest": "^30.0.5",
+    "ts-jest": "^29.4.1",
+    "supertest": "^7.1.4",
+    "eslint": "^9.34.0",
+    "@typescript-eslint/eslint-plugin": "^8.40.0",
+    "@typescript-eslint/parser": "^8.40.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "avalanche",
+    "blockchain",
+    "freelance",
+    "escrow",
+    "defi",
+    "express",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT"
+}

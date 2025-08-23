@@ -1,0 +1,146 @@
+[
+  {
+    "type": "function",
+    "name": "job",
+    "inputs": [
+      {
+        "name": "jobId",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "client",
+        "type": "address"
+      },
+      {
+        "name": "freelancer",
+        "type": "address"
+      },
+      {
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "name": "state",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "deposit",
+    "inputs": [
+      {
+        "name": "jobId",
+        "type": "uint256"
+      },
+      {
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "release",
+    "inputs": [
+      {
+        "name": "jobId",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "raiseDispute",
+    "inputs": [
+      {
+        "name": "jobId",
+        "type": "uint256"
+      },
+      {
+        "name": "reason",
+        "type": "string"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "Deposited",
+    "inputs": [
+      {
+        "name": "jobId",
+        "type": "uint256",
+        "indexed": true
+      },
+      {
+        "name": "client",
+        "type": "address",
+        "indexed": false
+      },
+      {
+        "name": "token",
+        "type": "address",
+        "indexed": false
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "Released",
+    "inputs": [
+      {
+        "name": "jobId",
+        "type": "uint256",
+        "indexed": true
+      },
+      {
+        "name": "freelancer",
+        "type": "address",
+        "indexed": false
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "Disputed",
+    "inputs": [
+      {
+        "name": "jobId",
+        "type": "uint256",
+        "indexed": true
+      },
+      {
+        "name": "opener",
+        "type": "address",
+        "indexed": false
+      }
+    ]
+  }
+]
