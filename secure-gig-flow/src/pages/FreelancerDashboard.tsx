@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DashboardLayout } from '@/components/ui/DashboardLayout';
+import { NearbyMapContainer } from '@/map';
 import { getUserData } from '../lib/user-utils';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -20,9 +21,12 @@ import {
   DollarSign,
   BarChart,
   Search,
-  MapPin,
   Clock,
-  X
+  MapPin,
+  Star,
+  TrendingUp,
+  Users,
+  Calendar
 } from 'lucide-react';
 
 const FreelancerDashboard = () => {
@@ -34,6 +38,7 @@ const FreelancerDashboard = () => {
   const [additionalNotes, setAdditionalNotes] = useState('');
   const navigate = useNavigate();
   const { toast } = useToast();
+  
   
   const userData = getUserData();
   const userName = userData?.name || 'Freelancer';
@@ -47,8 +52,8 @@ const FreelancerDashboard = () => {
     setAdditionalNotes('');
   };
 
-  const handleViewDetailsClick = (gig: any) => {
-    setSelectedGig(gig);
+  const handleViewDetailsClick = (job: any) => {
+    setSelectedGig(job);
     setShowDetailsModal(true);
   };
 
@@ -92,7 +97,6 @@ const FreelancerDashboard = () => {
     { href: '/find-gigs', label: 'Find Gigs', icon: Search },
     { href: '/my-proposals', label: 'My Proposals', icon: FileText },
     { href: '/my-contracts', label: 'My Contracts', icon: Shield },
-    { href: '/chat', label: 'Messages', icon: MessageSquare },
     { href: '/settings', label: 'Settings', icon: Settings },
   ];
 
@@ -136,11 +140,11 @@ const FreelancerDashboard = () => {
   ];
 
   return (
-    <DashboardLayout navLinks={navLinks} userName={userName} userRole="Freelancer" userAvatar={userAvatar}>
+    <DashboardLayout navLinks={navLinks}>
       <div className="space-y-8">
         <h1 className="text-3xl font-bold">Freelancer Dashboard</h1>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Earnings</CardTitle>
@@ -181,42 +185,82 @@ const FreelancerDashboard = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Recommended Gigs</CardTitle>
-            <CardDescription>Gigs matching your skills and experience.</CardDescription>
+            <CardTitle>Recent Activity</CardTitle>
+            <CardDescription>Your latest proposals and contract updates.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {mockGigs.map(gig => (
-                <Card key={gig.id} className="p-4">
-                  <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-4">
-                    <div className="flex-grow">
-                      <h3 className="font-semibold">{gig.title}</h3>
-                      <p className="text-sm text-muted-foreground mb-1">{gig.description.substring(0, 100)}...</p>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span className="font-semibold text-green-600">{gig.budget}</span>
-                        <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{gig.deadline}</span>
-                        <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{gig.location}</span>
-                      </div>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {gig.skills.map(skill => <Badge key={skill} variant="secondary">{skill}</Badge>)}
-                      </div>
-                    </div>
-                    <div className="flex gap-2 self-end sm:self-center flex-shrink-0">
-                      <Button variant="outline" size="sm" onClick={() => handleViewDetailsClick(gig.id)}>Details</Button>
-                      <Button size="sm" onClick={() => handleApplyClick(gig)}>Apply</Button>
-                    </div>
-                  </div>
-                </Card>
-              ))}
+              <div className="flex items-center space-x-4">
+                <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">Proposal accepted for "Build a DeFi Dashboard"</p>
+                  <p className="text-xs text-muted-foreground">2 hours ago</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-4">
+                <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">New message from CryptoClient.eth</p>
+                  <p className="text-xs text-muted-foreground">4 hours ago</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-4">
+                <div className="w-2 h-2 bg-yellow-500 rounded-full flex-shrink-0"></div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">Payment received: 2.5 AVAX</p>
+                  <p className="text-xs text-muted-foreground">1 day ago</p>
+                </div>
+              </div>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+            <CardDescription>Common tasks and shortcuts.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+              <Button variant="outline" className="h-16 md:h-20 flex-col text-xs md:text-sm" onClick={() => navigate('/find-gigs')}>
+                <Search className="h-4 w-4 md:h-6 md:w-6 mb-1 md:mb-2" />
+                Find New Gigs
+              </Button>
+              <Button variant="outline" className="h-16 md:h-20 flex-col text-xs md:text-sm" onClick={() => navigate('/my-proposals')}>
+                <FileText className="h-4 w-4 md:h-6 md:w-6 mb-1 md:mb-2" />
+                View Proposals
+              </Button>
+              <Button variant="outline" className="h-16 md:h-20 flex-col text-xs md:text-sm" onClick={() => navigate('/my-contracts')}>
+                <Shield className="h-4 w-4 md:h-6 md:w-6 mb-1 md:mb-2" />
+                Active Contracts
+              </Button>
+              <Button variant="outline" className="h-16 md:h-20 flex-col text-xs md:text-sm" onClick={() => navigate('/settings')}>
+                <Settings className="h-4 w-4 md:h-6 md:w-6 mb-1 md:mb-2" />
+                Settings
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Nearby Map Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="h-5 w-5" />
+              Nearby Clients & Opportunities
+            </CardTitle>
+            <CardDescription>Discover local clients and projects in your area.</CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <NearbyMapContainer />
           </CardContent>
         </Card>
 
         {/* Apply Modal */}
         <Dialog open={showApplyModal} onOpenChange={setShowApplyModal}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Apply for {selectedGig?.title}</DialogTitle>
+              <DialogTitle className="text-lg md:text-xl">Apply for {selectedGig?.title}</DialogTitle>
               <DialogDescription>Submit your proposal for this gig</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
@@ -228,6 +272,7 @@ const FreelancerDashboard = () => {
                   value={proposalMessage}
                   onChange={(e) => setProposalMessage(e.target.value)}
                   rows={4}
+                  className="min-h-[100px]"
                 />
               </div>
               <div className="space-y-2">
@@ -247,11 +292,12 @@ const FreelancerDashboard = () => {
                   value={additionalNotes}
                   onChange={(e) => setAdditionalNotes(e.target.value)}
                   rows={3}
+                  className="min-h-[80px]"
                 />
               </div>
-              <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={() => setShowApplyModal(false)}>Cancel</Button>
-                <Button onClick={handleSubmitProposal}>Submit Proposal</Button>
+              <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
+                <Button variant="outline" onClick={() => setShowApplyModal(false)} className="w-full sm:w-auto">Cancel</Button>
+                <Button onClick={handleSubmitProposal} className="w-full sm:w-auto">Submit Proposal</Button>
               </div>
             </div>
           </DialogContent>
@@ -259,47 +305,83 @@ const FreelancerDashboard = () => {
 
         {/* Details Modal */}
         <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{selectedGig?.title}</DialogTitle>
-              <DialogDescription>Gig Details</DialogDescription>
+              <DialogTitle className="text-lg md:text-xl">{selectedGig?.title}</DialogTitle>
+              <DialogDescription>Complete job details</DialogDescription>
             </DialogHeader>
-            {selectedGig && (
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-semibold mb-2">About the Client</h4>
-                  <p className="text-sm text-muted-foreground mb-2">{selectedGig.aboutClient}</p>
-                  <p className="text-sm"><span className="font-medium">Client:</span> {selectedGig.client}</p>
-                </div>
+            <div className="space-y-6">
+              <div>
+                <h4 className="font-semibold mb-2">Description</h4>
+                <p className="text-sm text-muted-foreground leading-relaxed">{selectedGig?.description}</p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <div>
                   <h4 className="font-semibold mb-2">Budget</h4>
-                  <p className="text-lg font-semibold text-green-600">{selectedGig.budget}</p>
+                  <p className="text-lg font-bold text-green-600">
+                    {selectedGig?.budget?.type === 'fixed' 
+                      ? `$${selectedGig?.budget?.amount} ${selectedGig?.budget?.currency}` 
+                      : `$${selectedGig?.budget?.amount}/${selectedGig?.budget?.type} ${selectedGig?.budget?.currency}`
+                    }
+                  </p>
                 </div>
-                <div>
-                  <h4 className="font-semibold mb-2">Work Description</h4>
-                  <p className="text-sm text-muted-foreground">{selectedGig.description}</p>
-                </div>
+                
                 <div>
                   <h4 className="font-semibold mb-2">Deadline</h4>
-                  <p className="text-sm">{selectedGig.deadline}</p>
+                  <p className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">{selectedGig?.deadline ? new Date(selectedGig.deadline).toLocaleDateString() : 'Not specified'}</span>
+                  </p>
                 </div>
+                
                 <div>
-                  <h4 className="font-semibold mb-2">Required Skills</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedGig.skills.map((skill: string) => (
-                      <Badge key={skill} variant="secondary">{skill}</Badge>
-                    ))}
+                  <h4 className="font-semibold mb-2">Category</h4>
+                  <Badge variant="outline">{selectedGig?.category}</Badge>
+                </div>
+                
+                <div>
+                  <h4 className="font-semibold mb-2">Client</h4>
+                  <div className="flex items-center gap-2">
+                    <span className="truncate">👤 {selectedGig?.client?.name}</span>
+                    {selectedGig?.client?.rating && (
+                      <span className="flex items-center gap-1 flex-shrink-0">
+                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                        {selectedGig.client.rating.toFixed(1)}
+                      </span>
+                    )}
                   </div>
                 </div>
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button variant="outline" onClick={() => setShowDetailsModal(false)}>Close</Button>
-                  <Button onClick={() => {
-                    setShowDetailsModal(false);
-                    handleApplyClick(selectedGig);
-                  }}>Apply for this Gig</Button>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold mb-2">Required Skills</h4>
+                <div className="flex flex-wrap gap-2">
+                  {selectedGig?.skills?.map((skill: string) => (
+                    <Badge key={skill} variant="secondary" className="text-xs">{skill}</Badge>
+                  ))}
                 </div>
               </div>
-            )}
+              
+              <div>
+                <h4 className="font-semibold mb-2">Posted</h4>
+                <p className="text-sm text-muted-foreground">
+                  {selectedGig?.createdAt ? new Date(selectedGig.createdAt).toLocaleString() : 'Unknown'}
+                </p>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-2 pt-4">
+                <Button onClick={() => {
+                  setShowDetailsModal(false);
+                  handleApplyClick(selectedGig);
+                }} className="w-full sm:w-auto">
+                  Apply for this Job
+                </Button>
+                <Button variant="outline" onClick={() => setShowDetailsModal(false)} className="w-full sm:w-auto">
+                  Close
+                </Button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       </div>

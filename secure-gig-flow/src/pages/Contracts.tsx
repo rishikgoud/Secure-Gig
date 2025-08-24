@@ -10,7 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { DashboardLayout } from '@/components/ui/DashboardLayout';
-import { getUserData, getWalletBalance } from '../lib/user-utils';
+import { getUserData, getWalletBalance, getStoredWalletBalance, getStoredEscrowBalance } from '../lib/user-utils';
 import { 
   FileText, 
   Clock, 
@@ -39,16 +39,23 @@ const Contracts = () => {
   const [activeTab, setActiveTab] = useState('active');
   const [selectedContract, setSelectedContract] = useState<any>(null);
   const [walletBalance, setWalletBalance] = useState(0);
-  const [escrowBalance, setEscrowBalance] = useState(8.2341);
+  const [escrowBalance, setEscrowBalance] = useState(0);
 
-  // Load actual wallet balance
+  // Load dynamic balances on component mount
   useEffect(() => {
-    const loadWalletBalance = async () => {
-      const balance = await getWalletBalance();
-      setWalletBalance(balance);
-    };
-    loadWalletBalance();
-  }, []);
+      const loadWalletBalance = async () => {
+        const balance = await getWalletBalance();
+        setWalletBalance(balance);
+      };
+      loadWalletBalance();
+    }, []);
+
+  const handleWhatsAppChat = (clientName: string) => {
+    // Format the message for WhatsApp
+    const message = encodeURIComponent(`Hi ${clientName}, I'd like to discuss our project contract. Let's connect!`);
+    // Open WhatsApp Web with the pre-filled message
+    window.open(`https://wa.me/?text=${message}`, '_blank');
+  };
 
   const [freelancerAddress, setFreelancerAddress] = useState('');
   const [releaseAmount, setReleaseAmount] = useState('');
@@ -65,7 +72,6 @@ const Contracts = () => {
     { href: '/my-gigs', label: 'My Gigs', icon: Briefcase },
     { href: '/proposals', label: 'Proposals', icon: FileText },
     { href: '/contracts', label: 'Contracts', icon: Shield },
-    { href: '/chat', label: 'Messages', icon: MessageSquare },
     { href: '/settings', label: 'Settings', icon: Settings },
   ];
 
@@ -149,68 +155,79 @@ const Contracts = () => {
   const filteredContracts = (status: string) => contracts.filter(c => c.status === status);
 
   return (
-    <DashboardLayout navLinks={navLinks} userName={userName} userRole="Client" userAvatar={userAvatar}>
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-4xl font-heading font-bold text-gradient-primary mb-4">Contracts</h1>
-          <p className="text-lg text-muted-foreground">View and manage all your active and past contracts.</p>
+    <DashboardLayout navLinks={navLinks}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-6 md:mb-8">
+          <h1 className="text-2xl md:text-4xl font-heading font-bold text-gradient-primary mb-2 md:mb-4">Contracts</h1>
+          <p className="text-base md:text-lg text-muted-foreground">View and manage all your active and past contracts.</p>
         </div>
 
         {/* Wallet Balance and Escrow Balance Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <Card className="p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
+          <Card className="p-4 md:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Wallet Balance</p>
-                <p className="text-2xl font-bold">5.2500 AVAX</p>
+                <p className="text-xl md:text-2xl font-bold">{walletBalance.toFixed(4)} AVAX</p>
               </div>
-              <div className="bg-blue-100 dark:bg-blue-900/20 p-3 rounded-full">
-                <Wallet className="h-6 w-6 text-blue-600" />
+              <div className="bg-blue-100 dark:bg-blue-900/20 p-2 md:p-3 rounded-full">
+                <Wallet className="h-5 w-5 md:h-6 md:w-6 text-blue-600" />
               </div>
             </div>
           </Card>
           
-          <Card className="p-6">
+          <Card className="p-4 md:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Escrow Balance</p>
-                <p className="text-2xl font-bold text-green-600">6.3760 AVAX</p>
+                <p className="text-xl md:text-2xl font-bold text-green-600">{escrowBalance} AVAX</p>
               </div>
-              <div className="bg-green-100 dark:bg-green-900/20 p-3 rounded-full">
-                <Shield className="h-6 w-6 text-green-600" />
+              <div className="bg-green-100 dark:bg-green-900/20 p-2 md:p-3 rounded-full">
+                <Shield className="h-5 w-5 md:h-6 md:w-6 text-green-600" />
               </div>
             </div>
           </Card>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
-            <TabsTrigger value="active">Active ({filteredContracts('active').length})</TabsTrigger>
-            <TabsTrigger value="completed">Completed ({filteredContracts('completed').length})</TabsTrigger>
-            <TabsTrigger value="disputed">Disputed ({filteredContracts('disputed').length})</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 mb-6 md:mb-8">
+            <TabsTrigger value="active" className="text-xs sm:text-sm">Active ({filteredContracts('active').length})</TabsTrigger>
+            <TabsTrigger value="completed" className="text-xs sm:text-sm">Completed ({filteredContracts('completed').length})</TabsTrigger>
+            <TabsTrigger value="disputed" className="text-xs sm:text-sm">Disputed ({filteredContracts('disputed').length})</TabsTrigger>
           </TabsList>
 
           {['active', 'completed', 'disputed'].map(status => (
-            <TabsContent key={status} value={status} className="space-y-6">
+            <TabsContent key={status} value={status} className="space-y-4 md:space-y-6">
               {filteredContracts(status).map(contract => (
                 <Card key={contract.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <CardTitle className="text-xl">{contract.title}</CardTitle>
-                        <CardDescription className="mt-2">
+                  <CardHeader className="pb-3 md:pb-6">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-lg md:text-xl truncate">{contract.title}</CardTitle>
+                        <CardDescription className="mt-1 md:mt-2">
                           {contract.role === 'Client' ? 'Freelancer' : 'Client'}: {contract.otherParty}
                         </CardDescription>
                       </div>
-                      {getStatusBadge(contract.status)}
+                      <div className="flex-shrink-0">
+                        {getStatusBadge(contract.status)}
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div className="flex items-center gap-2"><DollarSign className="h-4 w-4" /><span>{contract.budget} AVAX</span></div>
-                        <div className="flex items-center gap-2"><Calendar className="h-4 w-4" /><span>Deadline: {contract.deadline}</span></div>
-                        <div className="flex items-center gap-2"><Clock className="h-4 w-4" /><span>Last Update: {contract.lastUpdate}</span></div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 text-sm">
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="h-4 w-4 flex-shrink-0" />
+                          <span className="truncate">{contract.budget} AVAX</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 flex-shrink-0" />
+                          <span className="truncate">Deadline: {contract.deadline}</span>
+                        </div>
+                        <div className="flex items-center gap-2 sm:col-span-2 lg:col-span-1">
+                          <Clock className="h-4 w-4 flex-shrink-0" />
+                          <span className="truncate">Last Update: {contract.lastUpdate}</span>
+                        </div>
                       </div>
                       {contract.status === 'active' && (
                         <div>
@@ -225,11 +242,12 @@ const Contracts = () => {
                           <p><strong>Dispute Reason:</strong> {contract.disputeReason}</p>
                         </div>
                       )}
-                      <div className="flex justify-between items-center pt-4 border-t">
-                        <div className="flex gap-2">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center pt-4 border-t gap-3">
+                        <div className="flex flex-col sm:flex-row gap-2">
                           <Button 
                             variant="outline" 
                             size="sm"
+                            className="w-full sm:w-auto"
                             onClick={() => {
                               setSelectedContract(contract);
                               setDetailsModalOpen(true);
@@ -237,21 +255,30 @@ const Contracts = () => {
                           >
                             <FileText className="h-4 w-4 mr-2" />View Details
                           </Button>
-                          <Button variant="outline" size="sm"><MessageCircle className="h-4 w-4 mr-2" />Chat</Button>
-                        </div>
-                        {contract.status === 'active' && (
                           <Button 
-                            className="bg-green-500 text-white"
-                            onClick={() => {
-                              setSelectedContract(contract);
-                              setReleaseModalOpen(true);
-                            }}
+                            variant="outline" 
+                            size="sm"
+                            className="w-full sm:w-auto"
+                            onClick={() => handleWhatsAppChat(contract.otherParty)}
                           >
-                            Release Milestone
+                            <MessageCircle className="h-4 w-4 mr-2" />Chat
                           </Button>
-                        )}
-                        {contract.status === 'completed' && <Button variant="outline">Leave Feedback</Button>}
-                        {contract.status === 'disputed' && <Button variant="destructive">View Dispute</Button>}
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                          {contract.status === 'active' && (
+                            <Button 
+                              className="bg-green-500 text-white w-full sm:w-auto"
+                              onClick={() => {
+                                setSelectedContract(contract);
+                                setReleaseModalOpen(true);
+                              }}
+                            >
+                              Release Milestone
+                            </Button>
+                          )}
+                          {contract.status === 'completed' && <Button variant="outline" className="w-full sm:w-auto">Leave Feedback</Button>}
+                          {contract.status === 'disputed' && <Button variant="destructive" className="w-full sm:w-auto">View Dispute</Button>}
+                        </div>
                       </div>
                     </div>
                   </CardContent>
@@ -263,9 +290,9 @@ const Contracts = () => {
 
         {/* View Details Modal */}
         <Dialog open={detailsModalOpen} onOpenChange={setDetailsModalOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-background border shadow-lg">
+          <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto bg-background border shadow-lg">
             <DialogHeader className="pb-4 border-b">
-              <DialogTitle className="text-2xl font-bold text-foreground">{selectedContract?.title}</DialogTitle>
+              <DialogTitle className="text-xl md:text-2xl font-bold text-foreground pr-8">{selectedContract?.title}</DialogTitle>
               <DialogDescription className="text-muted-foreground">
                 Contract details and progress overview
               </DialogDescription>
@@ -275,17 +302,17 @@ const Contracts = () => {
               <div className="space-y-6">
                 {/* Freelancer Info */}
                 <div className="bg-muted/50 p-4 rounded-lg">
-                  <h3 className="font-semibold text-lg mb-3">
+                  <h3 className="font-semibold text-base md:text-lg mb-3">
                     {selectedContract.role === 'Client' ? 'Freelancer' : 'Client'} Information
                   </h3>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      <span className="font-medium">{selectedContract.otherParty}</span>
+                      <User className="h-4 w-4 flex-shrink-0" />
+                      <span className="font-medium truncate">{selectedContract.otherParty}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Wallet className="h-4 w-4" />
-                      <span className="text-sm text-muted-foreground font-mono">
+                      <Wallet className="h-4 w-4 flex-shrink-0" />
+                      <span className="text-sm text-muted-foreground font-mono truncate">
                         0x{Math.random().toString(16).substr(2, 40)}
                       </span>
                     </div>
@@ -295,12 +322,12 @@ const Contracts = () => {
                 {/* Contract Details */}
                 <div className="space-y-6">
                   <div>
-                    <h3 className="font-semibold text-lg mb-3">Gig Description</h3>
-                    <p className="text-muted-foreground">{selectedContract.description || selectedContract.title}</p>
+                    <h3 className="font-semibold text-base md:text-lg mb-3">Gig Description</h3>
+                    <p className="text-muted-foreground leading-relaxed">{selectedContract.description || selectedContract.title}</p>
                   </div>
                   
                   <div>
-                    <h3 className="font-semibold text-lg mb-3">Freelancer Information</h3>
+                    <h3 className="font-semibold text-base md:text-lg mb-3">Freelancer Information</h3>
                     <div className="space-y-2">
                       <div>
                         <p className="text-sm text-muted-foreground">Name</p>
@@ -308,7 +335,7 @@ const Contracts = () => {
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Wallet Address</p>
-                        <p className="font-mono text-sm bg-muted px-2 py-1 rounded">{selectedContract.freelancerWallet || '0x742d35Cc6634C0532925a3b8D2'}</p>
+                        <p className="font-mono text-sm bg-muted px-2 py-1 rounded break-all">{selectedContract.freelancerWallet || '0x742d35Cc6634C0532925a3b8D2'}</p>
                       </div>
                     </div>
                   </div>
@@ -316,7 +343,7 @@ const Contracts = () => {
 
                 {/* Progress Section */}
                 <div>
-                  <h3 className="font-semibold text-lg mb-3">Work Progress</h3>
+                  <h3 className="font-semibold text-base md:text-lg mb-3">Work Progress</h3>
                   <div className="space-y-4">
                     <div>
                       <div className="flex justify-between items-center mb-2">
@@ -333,11 +360,11 @@ const Contracts = () => {
                           {selectedContract.milestones.map((milestone: any) => (
                             <div key={milestone.id} className="flex items-center gap-3">
                               {milestone.completed ? (
-                                <CheckCircle className="h-5 w-5 text-green-500" />
+                                <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
                               ) : (
-                                <Clock className="h-5 w-5 text-muted-foreground" />
+                                <Clock className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                               )}
-                              <span className={milestone.completed ? 'line-through text-muted-foreground' : ''}>
+                              <span className={`${milestone.completed ? 'line-through text-muted-foreground' : ''} text-sm`}>
                                 {milestone.name}
                               </span>
                             </div>
@@ -350,11 +377,11 @@ const Contracts = () => {
 
                 {/* Payment Information */}
                 <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg">
-                  <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                  <h3 className="font-semibold text-base md:text-lg mb-3 flex items-center gap-2">
                     <DollarSign className="h-5 w-5" />
                     Payment Information
                   </h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-muted-foreground">Total Budget</p>
                       <p className="text-lg font-bold">{selectedContract.budget} AVAX</p>
@@ -372,11 +399,11 @@ const Contracts = () => {
 
         {/* Release Milestone Modal */}
         <Dialog open={releaseModalOpen} onOpenChange={setReleaseModalOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="w-[95vw] max-w-md max-h-[90vh] overflow-y-auto">
             <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
             <div className="relative">
               <DialogHeader>
-                <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <DialogTitle className="text-lg md:text-xl font-bold flex items-center gap-2 pr-8">
                   <DollarSign className="h-5 w-5" />
                   Release Milestone Payment
                 </DialogTitle>
@@ -388,25 +415,25 @@ const Contracts = () => {
               <div className="space-y-4 mt-6">
                 {selectedContract && (
                   <div className="bg-muted/50 p-3 rounded-lg text-sm">
-                    <p><strong>Project:</strong> {selectedContract.title}</p>
+                    <p><strong>Project:</strong> <span className="break-words">{selectedContract.title}</span></p>
                     <p><strong>Available Escrow:</strong> {selectedContract.escrowAmount} AVAX</p>
                   </div>
                 )}
                 
                 <div className="space-y-2">
                   <Label htmlFor="freelancer-address">Freelancer Wallet Address</Label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Input
                       id="freelancer-address"
                       placeholder="0x..."
                       value={freelancerAddress}
                       onChange={(e) => setFreelancerAddress(e.target.value)}
-                      className="font-mono text-sm"
+                      className="font-mono text-sm flex-1"
                     />
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      className="px-3"
+                      className="px-3 w-full sm:w-auto"
                       onClick={() => {
                         // Create a file input element for QR code upload simulation
                         const input = document.createElement('input');
@@ -448,7 +475,7 @@ const Contracts = () => {
                   />
                 </div>
 
-                <div className="flex gap-3 pt-4">
+                <div className="flex flex-col sm:flex-row gap-3 pt-4">
                   <Button
                     className="flex-1 bg-green-600 hover:bg-green-700"
                     onClick={() => {
@@ -508,6 +535,7 @@ const Contracts = () => {
                   </Button>
                   <Button
                     variant="outline"
+                    className="flex-1 sm:flex-initial"
                     onClick={() => {
                       setReleaseModalOpen(false);
                       setFreelancerAddress('');

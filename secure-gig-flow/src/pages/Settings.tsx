@@ -26,7 +26,8 @@ import {
   Upload,
   Camera,
   Edit,
-  Trash2
+  Trash2,
+  Search
 } from 'lucide-react';
 
 const Settings = () => {
@@ -48,595 +49,450 @@ const Settings = () => {
         bio: data.bio || 'Experienced blockchain enthusiast and project manager.',
         location: data.location || 'San Francisco, CA',
         website: data.website || '',
-        skills: data.skills || [],
-        hourlyRate: '0.00', // Clients don't have hourly rates
-        avatar: data.avatar || '🤴',
-        companyName: data.companyName || '',
-        industry: data.industry || '',
-        accountType: data.accountType || 'individual'
+        avatar: data.avatar || '👑',
+        email: data.email || 'cryptoking@example.com',
+        phone: data.phone || '+1 (555) 123-4567',
+        timezone: data.timezone || 'America/Los_Angeles',
+        language: data.language || 'en'
       };
     } else if (userRole === 'Freelancer' && freelancerData) {
       const data = JSON.parse(freelancerData);
       return {
-        displayName: data.name || 'CryptoKing.eth',
-        bio: data.bio || 'Experienced blockchain developer and DeFi enthusiast.',
-        location: data.location || 'San Francisco, CA',
+        displayName: data.name || 'Alex Chen',
+        bio: data.bio || 'Full-stack developer specializing in React and Node.js',
+        location: data.location || 'New York, NY',
         website: data.website || '',
-        skills: data.skills || ['Solidity', 'React', 'Web3.js'],
-        hourlyRate: data.hourlyRate || '0.05',
-        avatar: data.avatar || '🤴',
-        experienceLevel: data.experienceLevel || 'intermediate',
-        portfolioLinks: data.portfolioLinks || []
+        avatar: data.avatar || '👨‍💻',
+        email: data.email || 'alex@example.com',
+        phone: data.phone || '+1 (555) 987-6543',
+        timezone: data.timezone || 'America/New_York',
+        language: data.language || 'en',
+        hourlyRate: data.hourlyRate || 75,
+        skills: data.skills || ['React', 'Node.js', 'TypeScript', 'MongoDB']
       };
     }
     
-    // Default fallback
     return {
-      displayName: 'CryptoKing.eth',
-      bio: userRole === 'Client' 
-        ? 'Experienced blockchain enthusiast and project manager.' 
-        : 'Experienced blockchain developer and DeFi enthusiast.',
-      location: 'San Francisco, CA',
+      displayName: 'User',
+      bio: '',
+      location: '',
       website: '',
-      skills: userRole === 'Client' ? [] : ['Solidity', 'React', 'Web3.js'],
-      hourlyRate: userRole === 'Client' ? '0.00' : '0.05',
-      avatar: '🤴'
+      avatar: '👤',
+      email: '',
+      phone: '',
+      timezone: 'UTC',
+      language: 'en',
+      hourlyRate: userRole === 'Freelancer' ? 50 : undefined,
+      skills: userRole === 'Freelancer' ? [] : undefined
     };
   };
 
-  // Profile state with proper typing
-  const [profile, setProfile] = useState<any>(loadUserData());
-
-  // Notification settings
+  const [formData, setFormData] = useState(loadUserData());
   const [notifications, setNotifications] = useState({
-    emailProposals: true,
-    emailMessages: true,
-    emailMilestones: true,
-    pushProposals: false,
-    pushMessages: true,
-    pushMilestones: true
+    emailNotifications: true,
+    pushNotifications: true,
+    proposalUpdates: true,
+    messageNotifications: true,
+    marketingEmails: false
+  });
+  const [privacy, setPrivacy] = useState({
+    profileVisibility: 'public',
+    showEmail: false,
+    showPhone: false,
+    allowDirectMessages: true
   });
 
-  // Security settings
-  const [security, setSecurity] = useState({
-    twoFactorEnabled: false,
-    sessionTimeout: '24h',
-    walletAutoLock: true
-  });
+  const navLinks = userRole === 'Client' 
+    ? [
+        { href: dashboardHome, label: 'Dashboard', icon: LayoutDashboard },
+        { href: '/my-gigs', label: 'My Gigs', icon: Briefcase },
+        { href: '/proposals', label: 'Proposals', icon: FileText },
+        { href: '/contracts', label: 'Contracts', icon: Shield },
+        { href: '/settings', label: 'Settings', icon: SettingsIcon },
+      ]
+    : [
+        { href: dashboardHome, label: 'Dashboard', icon: LayoutDashboard },
+        { href: '/find-gigs', label: 'Find Gigs', icon: Search },
+        { href: '/my-proposals', label: 'My Proposals', icon: FileText },
+        { href: '/my-contracts', label: 'My Contracts', icon: Shield },
+        { href: '/settings', label: 'Settings', icon: SettingsIcon },
+      ];
 
-  // Appearance settings
-  const [appearance, setAppearance] = useState({
-    theme: 'system',
-    language: 'en',
-    currency: 'AVAX'
-  });
+  const handleInputChange = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
 
-  const [newSkill, setNewSkill] = useState('');
-  const [activeTab, setActiveTab] = useState('profile');
+  const handleNotificationChange = (field: string, value: boolean) => {
+    setNotifications(prev => ({ ...prev, [field]: value }));
+  };
 
-  const navLinks = [
-    { href: dashboardHome, label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/my-gigs', label: 'My Gigs', icon: Briefcase },
-    { href: '/proposals', label: 'Proposals', icon: FileText },
-    { href: '/contracts', label: 'Contracts', icon: Shield },
-    { href: '/chat', label: 'Messages', icon: MessageSquare },
-    { href: '/settings', label: 'Settings', icon: SettingsIcon },
-  ];
+  const handlePrivacyChange = (field: string, value: any) => {
+    setPrivacy(prev => ({ ...prev, [field]: value }));
+  };
 
-  const avatarOptions = ['🤴', '👑', '🚀', '💎', '🔥', '⚡', '🌟', '🎯', '🛡️', '🎪', '🎨', '🎭'];
-
-  const handleProfileUpdate = () => {
-    // Save role-specific data to localStorage
-    if (userRole === 'Client') {
-      const clientData = {
-        name: profile.displayName,
-        bio: profile.bio,
-        location: profile.location,
-        website: profile.website,
-        avatar: profile.avatar,
-        companyName: profile.companyName || '',
-        industry: profile.industry || '',
-        accountType: profile.accountType || 'individual'
-      };
-      localStorage.setItem('clientData', JSON.stringify(clientData));
-    } else {
-      const freelancerData = {
-        name: profile.displayName,
-        bio: profile.bio,
-        location: profile.location,
-        website: profile.website,
-        skills: profile.skills,
-        hourlyRate: profile.hourlyRate,
-        avatar: profile.avatar,
-        experienceLevel: profile.experienceLevel || 'intermediate',
-        portfolioLinks: profile.portfolioLinks || []
-      };
-      localStorage.setItem('freelancerData', JSON.stringify(freelancerData));
-    }
-
+  const handleSaveProfile = () => {
+    const storageKey = userRole === 'Client' ? 'clientData' : 'freelancerData';
+    const existingData = JSON.parse(localStorage.getItem(storageKey) || '{}');
+    const updatedData = { ...existingData, ...formData };
+    localStorage.setItem(storageKey, JSON.stringify(updatedData));
+    
     toast({
       title: "Profile Updated",
-      description: "Your profile has been successfully updated.",
+      description: "Your profile has been saved successfully.",
     });
   };
 
-  const handleNotificationUpdate = () => {
+  const handleSaveNotifications = () => {
+    localStorage.setItem('userNotifications', JSON.stringify(notifications));
     toast({
-      title: "Notifications Updated",
+      title: "Notification Settings Updated",
       description: "Your notification preferences have been saved.",
     });
   };
 
-  const handleSecurityUpdate = () => {
+  const handleSavePrivacy = () => {
+    localStorage.setItem('userPrivacy', JSON.stringify(privacy));
     toast({
-      title: "Security Settings Updated",
-      description: "Your security preferences have been saved.",
+      title: "Privacy Settings Updated",
+      description: "Your privacy settings have been saved.",
     });
-  };
-
-  const handleAppearanceUpdate = () => {
-    toast({
-      title: "Appearance Updated",
-      description: "Your appearance preferences have been saved.",
-    });
-  };
-
-  const addSkill = () => {
-    if (newSkill.trim() && !profile.skills.includes(newSkill.trim())) {
-      setProfile(prev => ({
-        ...prev,
-        skills: [...prev.skills, newSkill.trim()]
-      }));
-      setNewSkill('');
-    }
-  };
-
-  const removeSkill = (skillToRemove: string) => {
-    setProfile(prev => ({
-      ...prev,
-      skills: prev.skills.filter(skill => skill !== skillToRemove)
-    }));
   };
 
   return (
-    <DashboardLayout navLinks={navLinks} userName={profile.displayName} userRole={userRole} userAvatar={profile.avatar}>
-      <div className="space-y-8">
-        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+    <DashboardLayout navLinks={navLinks}>
+      <div className="space-y-4 sm:space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Settings</h1>
-            <p className="text-muted-foreground">Manage your account preferences and settings</p>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Settings</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
+              Manage your account preferences and settings
+            </p>
           </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="profile" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Profile
+        {/* Settings Tabs */}
+        <Tabs defaultValue="profile" className="space-y-4 sm:space-y-6">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-1 sm:gap-0 h-auto sm:h-10 p-1">
+            <TabsTrigger value="profile" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-0">
+              <User className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Profile</span>
             </TabsTrigger>
-            <TabsTrigger value="notifications" className="flex items-center gap-2">
-              <Bell className="h-4 w-4" />
-              Notifications
+            <TabsTrigger value="notifications" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-0">
+              <Bell className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Notifications</span>
             </TabsTrigger>
-            <TabsTrigger value="security" className="flex items-center gap-2">
-              <Lock className="h-4 w-4" />
-              Security
+            <TabsTrigger value="privacy" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-0">
+              <Lock className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Privacy</span>
             </TabsTrigger>
-            <TabsTrigger value="appearance" className="flex items-center gap-2">
-              <Palette className="h-4 w-4" />
-              Appearance
+            <TabsTrigger value="preferences" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-0">
+              <Palette className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Preferences</span>
             </TabsTrigger>
           </TabsList>
 
           {/* Profile Tab */}
-          <TabsContent value="profile" className="space-y-6">
+          <TabsContent value="profile" className="space-y-4 sm:space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
                   <User className="h-5 w-5" />
                   Profile Information
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Avatar Selection */}
-                <div className="space-y-3">
-                  <Label>Avatar</Label>
+              <CardContent className="space-y-4 sm:space-y-6">
+                {/* Avatar Section */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                   <div className="flex items-center gap-4">
-                    <div className="text-4xl">{profile.avatar}</div>
-                    <div className="grid grid-cols-6 gap-2">
-                      {avatarOptions.map((avatar) => (
-                        <button
-                          key={avatar}
-                          onClick={() => setProfile(prev => ({ ...prev, avatar }))}
-                          className={`text-2xl p-2 rounded-lg border-2 hover:bg-gray-100 transition-colors ${
-                            profile.avatar === avatar ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
-                          }`}
-                        >
-                          {avatar}
-                        </button>
-                      ))}
+                    <div className="h-16 w-16 sm:h-20 sm:w-20 bg-primary/10 rounded-full flex items-center justify-center text-2xl sm:text-3xl">
+                      {formData.avatar}
+                    </div>
+                    <div className="space-y-2">
+                      <Button variant="outline" size="sm" className="flex items-center gap-2">
+                        <Camera className="h-3 w-3 sm:h-4 sm:w-4" />
+                        <span className="text-xs sm:text-sm">Change Avatar</span>
+                      </Button>
+                      <p className="text-xs text-muted-foreground">JPG, PNG or GIF (max. 2MB)</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Basic Info */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Form Fields */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="displayName">Display Name</Label>
+                    <Label htmlFor="displayName" className="text-sm font-medium">Display Name</Label>
                     <Input
                       id="displayName"
-                      value={profile.displayName}
-                      onChange={(e) => setProfile(prev => ({ ...prev, displayName: e.target.value }))}
+                      value={formData.displayName}
+                      onChange={(e) => handleInputChange('displayName', e.target.value)}
+                      className="text-sm"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="location">Location</Label>
+                    <Label htmlFor="email" className="text-sm font-medium">Email</Label>
                     <Input
-                      id="location"
-                      value={profile.location}
-                      onChange={(e) => setProfile(prev => ({ ...prev, location: e.target.value }))}
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => handleInputChange('email', e.target.value)}
+                      className="text-sm"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone" className="text-sm font-medium">Phone</Label>
+                    <Input
+                      id="phone"
+                      value={formData.phone}
+                      onChange={(e) => handleInputChange('phone', e.target.value)}
+                      className="text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="location" className="text-sm font-medium">Location</Label>
+                    <Input
+                      id="location"
+                      value={formData.location}
+                      onChange={(e) => handleInputChange('location', e.target.value)}
+                      className="text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="website" className="text-sm font-medium">Website</Label>
+                    <Input
+                      id="website"
+                      type="url"
+                      value={formData.website}
+                      onChange={(e) => handleInputChange('website', e.target.value)}
+                      className="text-sm"
+                    />
+                  </div>
+                  {userRole === 'Freelancer' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="hourlyRate" className="text-sm font-medium">Hourly Rate ($)</Label>
+                      <Input
+                        id="hourlyRate"
+                        type="number"
+                        value={formData.hourlyRate}
+                        onChange={(e) => handleInputChange('hourlyRate', parseInt(e.target.value))}
+                        className="text-sm"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="website">Website</Label>
-                  <Input
-                    id="website"
-                    type="url"
-                    value={profile.website}
-                    onChange={(e) => setProfile(prev => ({ ...prev, website: e.target.value }))}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="bio">Bio</Label>
+                  <Label htmlFor="bio" className="text-sm font-medium">Bio</Label>
                   <Textarea
                     id="bio"
+                    value={formData.bio}
+                    onChange={(e) => handleInputChange('bio', e.target.value)}
                     rows={4}
-                    value={profile.bio}
-                    onChange={(e) => setProfile(prev => ({ ...prev, bio: e.target.value }))}
-                    placeholder="Tell others about yourself..."
+                    className="text-sm resize-none"
+                    placeholder="Tell us about yourself..."
                   />
                 </div>
 
-                {/* Client-specific fields */}
-                {userRole === 'Client' && (
-                  <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="accountType">Account Type</Label>
-                        <Select 
-                          value={profile.accountType || 'individual'} 
-                          onValueChange={(value) => setProfile((prev: any) => ({ ...prev, accountType: value }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="individual">Individual</SelectItem>
-                            <SelectItem value="company">Company</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      {profile.accountType === 'company' && (
-                        <div className="space-y-2">
-                          <Label htmlFor="companyName">Company Name</Label>
-                          <Input
-                            id="companyName"
-                            value={profile.companyName || ''}
-                            onChange={(e) => setProfile((prev: any) => ({ ...prev, companyName: e.target.value }))}
-                          />
-                        </div>
-                      )}
-                    </div>
-                    {profile.accountType === 'company' && (
-                      <div className="space-y-2">
-                        <Label htmlFor="industry">Industry</Label>
-                        <Select 
-                          value={profile.industry || ''} 
-                          onValueChange={(value) => setProfile((prev: any) => ({ ...prev, industry: value }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select industry" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="technology">Technology</SelectItem>
-                            <SelectItem value="finance">Finance</SelectItem>
-                            <SelectItem value="healthcare">Healthcare</SelectItem>
-                            <SelectItem value="education">Education</SelectItem>
-                            <SelectItem value="retail">Retail</SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-                  </>
-                )}
-
-                {/* Freelancer-specific fields */}
                 {userRole === 'Freelancer' && (
-                  <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="experienceLevel">Experience Level</Label>
-                        <Select 
-                          value={profile.experienceLevel || 'intermediate'} 
-                          onValueChange={(value) => setProfile((prev: any) => ({ ...prev, experienceLevel: value }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="beginner">Beginner</SelectItem>
-                            <SelectItem value="intermediate">Intermediate</SelectItem>
-                            <SelectItem value="expert">Expert</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="hourlyRate">Hourly Rate (AVAX)</Label>
-                        <Input
-                          id="hourlyRate"
-                          type="number"
-                          step="0.0001"
-                          value={profile.hourlyRate}
-                          onChange={(e) => setProfile((prev: any) => ({ ...prev, hourlyRate: e.target.value }))}
-                        />
-                      </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Skills</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {formData.skills?.map((skill: string, index: number) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {skill}
+                          <button
+                            onClick={() => {
+                              const newSkills = formData.skills?.filter((_: any, i: number) => i !== index);
+                              handleInputChange('skills', newSkills);
+                            }}
+                            className="ml-1 hover:text-red-500"
+                          >
+                            ×
+                          </button>
+                        </Badge>
+                      ))}
                     </div>
-
-                    {/* Skills section - only for freelancers */}
-                    <div className="space-y-2">
-                      <Label>Skills</Label>
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        {profile.skills?.map((skill: string) => (
-                          <Badge key={skill} variant="secondary" className="flex items-center gap-1">
-                            {skill}
-                            <button
-                              onClick={() => {
-                                const updatedSkills = profile.skills.filter((s: string) => s !== skill);
-                                setProfile((prev: any) => ({ ...prev, skills: updatedSkills }));
-                              }}
-                              className="ml-1 hover:text-red-500"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </button>
-                          </Badge>
-                        ))}
-                      </div>
-                      <div className="flex gap-2">
-                        <Input
-                          placeholder="Add a skill"
-                          value={newSkill}
-                          onChange={(e) => setNewSkill(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && addSkill()}
-                        />
-                        <Button onClick={addSkill} variant="outline">Add</Button>
-                      </div>
-                    </div>
-                  </>
+                    <Input
+                      placeholder="Add a skill and press Enter"
+                      className="text-sm"
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          const value = (e.target as HTMLInputElement).value.trim();
+                          if (value && !formData.skills?.includes(value)) {
+                            handleInputChange('skills', [...(formData.skills || []), value]);
+                            (e.target as HTMLInputElement).value = '';
+                          }
+                        }
+                      }}
+                    />
+                  </div>
                 )}
 
-
-                <Button onClick={handleProfileUpdate} className="w-full">
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Profile
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-2 pt-4">
+                  <Button onClick={handleSaveProfile} className="flex items-center gap-2">
+                    <Save className="h-4 w-4" />
+                    Save Profile
+                  </Button>
+                  <Button variant="outline">
+                    Cancel
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
 
           {/* Notifications Tab */}
-          <TabsContent value="notifications" className="space-y-6">
+          <TabsContent value="notifications" className="space-y-4 sm:space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
                   <Bell className="h-5 w-5" />
                   Notification Preferences
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4 sm:space-y-6">
                 <div className="space-y-4">
-                  <h3 className="font-semibold">Email Notifications</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="emailProposals">New Proposals</Label>
+                  {Object.entries({
+                    emailNotifications: 'Email Notifications',
+                    pushNotifications: 'Push Notifications',
+                    proposalUpdates: 'Proposal Updates',
+                    messageNotifications: 'Message Notifications',
+                    marketingEmails: 'Marketing Emails'
+                  }).map(([key, label]) => (
+                    <div key={key} className="flex items-center justify-between py-2">
+                      <div className="space-y-1">
+                        <Label className="text-sm font-medium">{label}</Label>
+                        <p className="text-xs text-muted-foreground">
+                          {key === 'emailNotifications' && 'Receive email notifications for important updates'}
+                          {key === 'pushNotifications' && 'Get push notifications on your device'}
+                          {key === 'proposalUpdates' && 'Notifications when proposals are accepted or rejected'}
+                          {key === 'messageNotifications' && 'Notifications for new messages'}
+                          {key === 'marketingEmails' && 'Receive marketing emails and newsletters'}
+                        </p>
+                      </div>
                       <Switch
-                        id="emailProposals"
-                        checked={notifications.emailProposals}
-                        onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, emailProposals: checked }))}
+                        checked={notifications[key as keyof typeof notifications]}
+                        onCheckedChange={(checked) => handleNotificationChange(key, checked)}
                       />
                     </div>
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="emailMessages">New Messages</Label>
-                      <Switch
-                        id="emailMessages"
-                        checked={notifications.emailMessages}
-                        onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, emailMessages: checked }))}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="emailMilestones">Milestone Updates</Label>
-                      <Switch
-                        id="emailMilestones"
-                        checked={notifications.emailMilestones}
-                        onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, emailMilestones: checked }))}
-                      />
-                    </div>
-                  </div>
+                  ))}
                 </div>
 
-                <div className="space-y-4">
-                  <h3 className="font-semibold">Push Notifications</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="pushProposals">New Proposals</Label>
-                      <Switch
-                        id="pushProposals"
-                        checked={notifications.pushProposals}
-                        onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, pushProposals: checked }))}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="pushMessages">New Messages</Label>
-                      <Switch
-                        id="pushMessages"
-                        checked={notifications.pushMessages}
-                        onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, pushMessages: checked }))}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="pushMilestones">Milestone Updates</Label>
-                      <Switch
-                        id="pushMilestones"
-                        checked={notifications.pushMilestones}
-                        onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, pushMilestones: checked }))}
-                      />
-                    </div>
-                  </div>
+                <div className="flex flex-col sm:flex-row gap-2 pt-4">
+                  <Button onClick={handleSaveNotifications} className="flex items-center gap-2">
+                    <Save className="h-4 w-4" />
+                    Save Notifications
+                  </Button>
                 </div>
-
-                <Button onClick={handleNotificationUpdate} className="w-full">
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Preferences
-                </Button>
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* Security Tab */}
-          <TabsContent value="security" className="space-y-6">
+          {/* Privacy Tab */}
+          <TabsContent value="privacy" className="space-y-4 sm:space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
                   <Lock className="h-5 w-5" />
-                  Security Settings
+                  Privacy Settings
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4 sm:space-y-6">
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="twoFactor">Two-Factor Authentication</Label>
-                      <p className="text-sm text-muted-foreground">Add an extra layer of security to your account</p>
-                    </div>
-                    <Switch
-                      id="twoFactor"
-                      checked={security.twoFactorEnabled}
-                      onCheckedChange={(checked) => setSecurity(prev => ({ ...prev, twoFactorEnabled: checked }))}
-                    />
-                  </div>
-
                   <div className="space-y-2">
-                    <Label htmlFor="sessionTimeout">Session Timeout</Label>
-                    <Select
-                      value={security.sessionTimeout}
-                      onValueChange={(value) => setSecurity(prev => ({ ...prev, sessionTimeout: value }))}
-                    >
-                      <SelectTrigger>
+                    <Label className="text-sm font-medium">Profile Visibility</Label>
+                    <Select value={privacy.profileVisibility} onValueChange={(value) => handlePrivacyChange('profileVisibility', value)}>
+                      <SelectTrigger className="text-sm">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="1h">1 Hour</SelectItem>
-                        <SelectItem value="8h">8 Hours</SelectItem>
-                        <SelectItem value="24h">24 Hours</SelectItem>
-                        <SelectItem value="7d">7 Days</SelectItem>
-                        <SelectItem value="never">Never</SelectItem>
+                        <SelectItem value="public">Public</SelectItem>
+                        <SelectItem value="private">Private</SelectItem>
+                        <SelectItem value="contacts">Contacts Only</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="walletAutoLock">Auto-lock Wallet</Label>
-                      <p className="text-sm text-muted-foreground">Automatically lock wallet after inactivity</p>
+                  {Object.entries({
+                    showEmail: 'Show Email Address',
+                    showPhone: 'Show Phone Number',
+                    allowDirectMessages: 'Allow Direct Messages'
+                  }).map(([key, label]) => (
+                    <div key={key} className="flex items-center justify-between py-2">
+                      <div className="space-y-1">
+                        <Label className="text-sm font-medium">{label}</Label>
+                        <p className="text-xs text-muted-foreground">
+                          {key === 'showEmail' && 'Display your email address on your profile'}
+                          {key === 'showPhone' && 'Display your phone number on your profile'}
+                          {key === 'allowDirectMessages' && 'Allow other users to send you direct messages'}
+                        </p>
+                      </div>
+                      <Switch
+                        checked={privacy[key as keyof typeof privacy] as boolean}
+                        onCheckedChange={(checked) => handlePrivacyChange(key, checked)}
+                      />
                     </div>
-                    <Switch
-                      id="walletAutoLock"
-                      checked={security.walletAutoLock}
-                      onCheckedChange={(checked) => setSecurity(prev => ({ ...prev, walletAutoLock: checked }))}
-                    />
-                  </div>
+                  ))}
                 </div>
 
-                <Button onClick={handleSecurityUpdate} className="w-full">
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Security Settings
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-2 pt-4">
+                  <Button onClick={handleSavePrivacy} className="flex items-center gap-2">
+                    <Save className="h-4 w-4" />
+                    Save Privacy Settings
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* Appearance Tab */}
-          <TabsContent value="appearance" className="space-y-6">
+          {/* Preferences Tab */}
+          <TabsContent value="preferences" className="space-y-4 sm:space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
                   <Palette className="h-5 w-5" />
-                  Appearance & Language
+                  App Preferences
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
+              <CardContent className="space-y-4 sm:space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="theme">Theme</Label>
-                    <Select
-                      value={appearance.theme}
-                      onValueChange={(value) => setAppearance(prev => ({ ...prev, theme: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="light">Light</SelectItem>
-                        <SelectItem value="dark">Dark</SelectItem>
-                        <SelectItem value="system">System</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="language">Language</Label>
-                    <Select
-                      value={appearance.language}
-                      onValueChange={(value) => setAppearance(prev => ({ ...prev, language: value }))}
-                    >
-                      <SelectTrigger>
+                    <Label className="text-sm font-medium">Language</Label>
+                    <Select value={formData.language} onValueChange={(value) => handleInputChange('language', value)}>
+                      <SelectTrigger className="text-sm">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="en">English</SelectItem>
-                        <SelectItem value="es">Español</SelectItem>
-                        <SelectItem value="fr">Français</SelectItem>
-                        <SelectItem value="de">Deutsch</SelectItem>
-                        <SelectItem value="zh">中文</SelectItem>
+                        <SelectItem value="es">Spanish</SelectItem>
+                        <SelectItem value="fr">French</SelectItem>
+                        <SelectItem value="de">German</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-
                   <div className="space-y-2">
-                    <Label htmlFor="currency">Primary Currency</Label>
-                    <Select
-                      value={appearance.currency}
-                      onValueChange={(value) => setAppearance(prev => ({ ...prev, currency: value }))}
-                    >
-                      <SelectTrigger>
+                    <Label className="text-sm font-medium">Timezone</Label>
+                    <Select value={formData.timezone} onValueChange={(value) => handleInputChange('timezone', value)}>
+                      <SelectTrigger className="text-sm">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="AVAX">AVAX</SelectItem>
-                        <SelectItem value="ETH">ETH</SelectItem>
-                        <SelectItem value="USD">USD</SelectItem>
+                        <SelectItem value="America/New_York">Eastern Time</SelectItem>
+                        <SelectItem value="America/Chicago">Central Time</SelectItem>
+                        <SelectItem value="America/Denver">Mountain Time</SelectItem>
+                        <SelectItem value="America/Los_Angeles">Pacific Time</SelectItem>
+                        <SelectItem value="UTC">UTC</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
 
-                <Button onClick={handleAppearanceUpdate} className="w-full">
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Appearance Settings
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-2 pt-4">
+                  <Button onClick={handleSaveProfile} className="flex items-center gap-2">
+                    <Save className="h-4 w-4" />
+                    Save Preferences
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

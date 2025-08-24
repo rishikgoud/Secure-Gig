@@ -16,7 +16,7 @@ import {
   LayoutDashboard, 
   Briefcase, 
   FileText, 
-  MessageSquare, 
+  MessageCircle, 
   Shield, 
   Settings,
   DollarSign,
@@ -83,7 +83,7 @@ const ProposalsPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [walletBalance, setWalletBalance] = useState(0);
-  const [escrowBalance, setEscrowBalance] = useState(8.2341);
+  const [escrowBalance, setEscrowBalance] = useState(0);
 
   // Load actual wallet balance
   useEffect(() => {
@@ -183,7 +183,7 @@ const ProposalsPage = () => {
       freelancerWallet: "0xabcdef1234567890abcdef1234567890abcdef12",
       proposedAmount: "3.8",
       timeline: "7 weeks",
-      coverLetter: "Mobile development specialist with extensive experience in crypto wallets and security implementations.",
+      coverLetter: "Mobile development specialist focusing on secure cryptocurrency applications.",
       rating: 4.7,
       completedProjects: 23,
       skills: ["React Native", "TypeScript", "Blockchain", "Security"],
@@ -303,10 +303,10 @@ const ProposalsPage = () => {
   };
 
   const handleChat = (freelancerName: string) => {
-    toast({
-      title: "Chat Opening",
-      description: `Opening chat with ${freelancerName}...`
-    });
+    // Format the message for WhatsApp
+    const message = encodeURIComponent(`Hi ${freelancerName}, I'd like to discuss your proposal for my project.`);
+    // Open WhatsApp Web with the pre-filled message
+    window.open(`https://wa.me/?text=${message}`, '_blank');
   };
 
   const handleRejectProposal = (proposalId: number) => {
@@ -395,59 +395,58 @@ const ProposalsPage = () => {
     { href: '/my-gigs', label: 'My Gigs', icon: Briefcase },
     { href: '/proposals', label: 'Proposals', icon: FileText },
     { href: '/contracts', label: 'Contracts', icon: Shield },
-    { href: '/chat', label: 'Messages', icon: MessageSquare },
     { href: '/settings', label: 'Settings', icon: Settings },
   ];
 
   return (
-    <DashboardLayout navLinks={navLinks} userName={userName} userRole="Client" userAvatar={userAvatar}>
-      <div className="space-y-8">
+    <DashboardLayout navLinks={navLinks}>
+      <div className="space-y-6 md:space-y-8 px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Received Proposals</h1>
-            <p className="text-muted-foreground">Review and manage proposals from freelancers for your posted gigs</p>
+            <h1 className="text-2xl md:text-3xl font-bold">Received Proposals</h1>
+            <p className="text-muted-foreground text-sm md:text-base">Review and manage proposals from freelancers for your posted gigs</p>
           </div>
         </div>
 
         {/* Wallet Balance and Escrow Balance Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+          <Card className="p-4 md:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Wallet Balance</p>
-                <p className="text-2xl font-bold">{walletBalance.toFixed(4)} AVAX</p>
+                <p className="text-xl md:text-2xl font-bold">{walletBalance.toFixed(4)} AVAX</p>
               </div>
-              <div className="bg-blue-100 dark:bg-blue-900/20 p-3 rounded-full">
-                <Wallet className="h-6 w-6 text-blue-600" />
+              <div className="bg-blue-100 dark:bg-blue-900/20 p-2 md:p-3 rounded-full">
+                <Wallet className="h-5 w-5 md:h-6 md:w-6 text-blue-600" />
               </div>
             </div>
           </Card>
           
-          <Card className="p-6">
+          <Card className="p-4 md:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Escrow Balance</p>
-                <p className="text-2xl font-bold text-green-600">{escrowBalance.toFixed(4)} AVAX</p>
+                <p className="text-xl md:text-2xl font-bold text-green-600">{escrowBalance.toFixed(4)} AVAX</p>
               </div>
-              <div className="bg-green-100 dark:bg-green-900/20 p-3 rounded-full">
-                <Shield className="h-6 w-6 text-green-600" />
+              <div className="bg-green-100 dark:bg-green-900/20 p-2 md:p-3 rounded-full">
+                <Shield className="h-5 w-5 md:h-6 md:w-6 text-green-600" />
               </div>
             </div>
           </Card>
         </div>
 
-        <div className="space-y-8">
+        <div className="space-y-6 md:space-y-8">
           {gigs.map(gig => {
             const gigProposals = getProposalsForGig(gig.id);
             if (gigProposals.length === 0) return null;
             
             return (
-              <Card key={gig.id} className="p-6">
+              <Card key={gig.id} className="p-4 md:p-6">
                 <div className="mb-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h2 className="text-xl font-semibold mb-2">{gig.title}</h2>
-                      <p className="text-muted-foreground mb-3">{gig.description}</p>
+                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between mb-4 gap-4">
+                    <div className="flex-1">
+                      <h2 className="text-lg md:text-xl font-semibold mb-2">{gig.title}</h2>
+                      <p className="text-muted-foreground mb-3 text-sm md:text-base leading-relaxed">{gig.description}</p>
                       <div className="flex flex-wrap gap-2 mb-3">
                         {gig.skills.map(skill => (
                           <Badge key={skill} variant="secondary" className="text-xs">
@@ -456,7 +455,7 @@ const ProposalsPage = () => {
                         ))}
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-left lg:text-right flex-shrink-0">
                       <div className="text-lg font-semibold text-green-600 mb-1">
                         {gig.budget} AVAX
                       </div>
@@ -472,24 +471,26 @@ const ProposalsPage = () => {
                   
                   <div className="space-y-4">
                     {gigProposals.map(proposal => (
-                      <div key={proposal.id} className="border rounded-lg p-4 hover:bg-muted/20 transition-colors">
-                        <div className="flex flex-col lg:flex-row justify-between lg:items-start gap-4">
+                      <div key={proposal.id} className="border rounded-lg p-3 md:p-4 hover:bg-muted/20 transition-colors">
+                        <div className="flex flex-col gap-4">
                           <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <h4 className="font-semibold">{proposal.freelancerName}</h4>
-                              <Badge variant="secondary" className="flex items-center gap-1">
-                                <Star className="h-3 w-3 fill-current" />
-                                {proposal.rating}
-                              </Badge>
-                              <Badge variant="outline">
-                                {proposal.completedProjects} projects
-                              </Badge>
-                              <Badge variant={getStatusBadgeVariant(proposal.status)}>
-                                {proposal.status.charAt(0).toUpperCase() + proposal.status.slice(1)}
-                              </Badge>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+                              <h4 className="font-semibold text-base">{proposal.freelancerName}</h4>
+                              <div className="flex flex-wrap gap-2">
+                                <Badge variant="secondary" className="flex items-center gap-1 text-xs">
+                                  <Star className="h-3 w-3 fill-current" />
+                                  {proposal.rating}
+                                </Badge>
+                                <Badge variant="outline" className="text-xs">
+                                  {proposal.completedProjects} projects
+                                </Badge>
+                                <Badge variant={getStatusBadgeVariant(proposal.status)} className="text-xs">
+                                  {proposal.status.charAt(0).toUpperCase() + proposal.status.slice(1)}
+                                </Badge>
+                              </div>
                             </div>
                             
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-muted-foreground mb-3">
                               <span className="flex items-center gap-1 font-medium text-green-600">
                                 <DollarSign className="h-3 w-3" />
                                 {proposal.proposedAmount} AVAX
@@ -504,7 +505,7 @@ const ProposalsPage = () => {
                               </span>
                             </div>
                             
-                            <p className="text-muted-foreground mb-3 text-sm">{proposal.coverLetter}</p>
+                            <p className="text-muted-foreground mb-3 text-sm leading-relaxed">{proposal.coverLetter}</p>
                             
                             <div className="flex flex-wrap gap-2">
                               {proposal.skills.map(skill => (
@@ -517,12 +518,12 @@ const ProposalsPage = () => {
                         </div>
                         
                         {proposal.status === 'pending' && (
-                          <div className="flex flex-wrap gap-2 pt-4 border-t mt-4">
+                          <div className="flex flex-col sm:flex-row flex-wrap gap-2 pt-4 border-t mt-4">
                             <Button 
                               variant="outline" 
                               size="sm" 
                               onClick={() => handleViewProfile(proposal.freelancerName)}
-                              className="flex items-center gap-1"
+                              className="flex items-center gap-1 w-full sm:w-auto"
                             >
                               <Eye className="h-4 w-4" />
                               View Profile
@@ -531,16 +532,16 @@ const ProposalsPage = () => {
                               variant="outline" 
                               size="sm" 
                               onClick={() => handleChat(proposal.freelancerName)}
-                              className="flex items-center gap-1"
+                              className="flex items-center gap-1 w-full sm:w-auto"
                             >
-                              <MessageSquare className="h-4 w-4" />
+                              <MessageCircle className="h-4 w-4" />
                               Chat
                             </Button>
                             <Button 
                               variant="outline" 
                               size="sm" 
                               onClick={() => handleRejectProposal(proposal.id)}
-                              className="flex items-center gap-1 text-red-600 hover:text-red-700"
+                              className="flex items-center gap-1 text-red-600 hover:text-red-700 w-full sm:w-auto"
                             >
                               <X className="h-4 w-4" />
                               Reject
@@ -548,7 +549,7 @@ const ProposalsPage = () => {
                             <Button 
                               size="sm" 
                               onClick={() => handleAcceptProposal(proposal)}
-                              className="flex items-center gap-1 bg-green-600 hover:bg-green-700"
+                              className="flex items-center gap-1 bg-green-600 hover:bg-green-700 w-full sm:w-auto"
                             >
                               <CheckCircle className="h-4 w-4" />
                               Accept & Hire
@@ -566,29 +567,29 @@ const ProposalsPage = () => {
 
         {mockProposals.filter(p => p.status === 'pending').length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
-            <FileText className="h-16 w-16 mx-auto mb-4 opacity-50" />
-            <p className="text-lg">No proposals received yet.</p>
-            <p>Post some gigs to start receiving proposals from talented freelancers.</p>
+            <FileText className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-4 opacity-50" />
+            <p className="text-base md:text-lg">No proposals received yet.</p>
+            <p className="text-sm md:text-base">Post some gigs to start receiving proposals from talented freelancers.</p>
           </div>
         )}
 
         {/* Freelancer Profile Modal */}
         <Dialog open={showProfileModal} onOpenChange={setShowProfileModal}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Freelancer Profile</DialogTitle>
+              <DialogTitle className="text-lg md:text-xl pr-8">Freelancer Profile</DialogTitle>
             </DialogHeader>
             {selectedProfile && (
               <div className="space-y-6">
-                <div className="flex items-start gap-6">
+                <div className="flex flex-col md:flex-row md:items-start gap-4 md:gap-6">
                   <div className="flex-1">
-                    <h3 className="text-2xl font-bold mb-2">{selectedProfile.name}</h3>
-                    <div className="flex items-center gap-4 mb-4">
-                      <Badge variant="secondary" className="flex items-center gap-1">
+                    <h3 className="text-xl md:text-2xl font-bold mb-2">{selectedProfile.name}</h3>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-4">
+                      <Badge variant="secondary" className="flex items-center gap-1 w-fit">
                         <Star className="h-3 w-3 fill-current" />
                         {selectedProfile.rating}
                       </Badge>
-                      <Badge variant="outline">
+                      <Badge variant="outline" className="w-fit">
                         <Award className="h-3 w-3 mr-1" />
                         {selectedProfile.completedProjects} projects
                       </Badge>
@@ -597,7 +598,7 @@ const ProposalsPage = () => {
                         {selectedProfile.location}
                       </span>
                     </div>
-                    <p className="text-muted-foreground mb-4">{selectedProfile.bio}</p>
+                    <p className="text-muted-foreground mb-4 text-sm md:text-base leading-relaxed">{selectedProfile.bio}</p>
                     <div className="flex items-center gap-2 mb-4">
                       <span className="text-sm font-medium">Hourly Rate:</span>
                       <span className="text-green-600 font-semibold">{selectedProfile.hourlyRate} AVAX/hour</span>
@@ -609,7 +610,7 @@ const ProposalsPage = () => {
                   <h4 className="font-semibold mb-3">Skills</h4>
                   <div className="flex flex-wrap gap-2">
                     {selectedProfile.skills.map(skill => (
-                      <Badge key={skill} variant="secondary">
+                      <Badge key={skill} variant="secondary" className="text-xs">
                         {skill}
                       </Badge>
                     ))}
@@ -621,9 +622,9 @@ const ProposalsPage = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {selectedProfile.portfolio.map((item, index) => (
                       <Card key={index} className="p-4">
-                        <h5 className="font-semibold mb-2">{item.title}</h5>
-                        <p className="text-sm text-muted-foreground mb-3">{item.description}</p>
-                        <Button variant="outline" size="sm" className="flex items-center gap-1">
+                        <h5 className="font-semibold mb-2 text-sm md:text-base">{item.title}</h5>
+                        <p className="text-sm text-muted-foreground mb-3 leading-relaxed">{item.description}</p>
+                        <Button variant="outline" size="sm" className="flex items-center gap-1 w-full sm:w-auto">
                           <ExternalLink className="h-3 w-3" />
                           View Project
                         </Button>
@@ -633,7 +634,8 @@ const ProposalsPage = () => {
                 </div>
 
                 <div className="text-sm text-muted-foreground">
-                  <span className="font-medium">Wallet:</span> {selectedProfile.wallet}
+                  <span className="font-medium">Wallet:</span> 
+                  <span className="font-mono break-all ml-1">{selectedProfile.wallet}</span>
                 </div>
               </div>
             )}

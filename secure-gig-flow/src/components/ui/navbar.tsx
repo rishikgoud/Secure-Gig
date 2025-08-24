@@ -3,12 +3,25 @@ import { Button } from '@/components/ui/button';
 import { Wallet, Menu, X, Shield, Zap } from 'lucide-react';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { Link as ScrollLink } from 'react-scroll';
+import { useAuthStore } from '@/store/authStore';
 
 export const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const { isAuthenticated, user } = useAuthStore();
   
   const isActive = (path: string) => location.pathname === path;
+
+  // Handle authentication-first flow for wallet connection
+  const handleAuthAction = () => {
+    if (isAuthenticated) {
+      // User is logged in, redirect to wallet connection
+      return '/wallet-connection';
+    } else {
+      // User needs to login first
+      return '/login';
+    }
+  };
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-background/90 backdrop-blur-lg border-b border-border/50 transition-all duration-300">
@@ -45,10 +58,10 @@ export const Navbar = () => {
 
           {/* Desktop CTA Buttons */}
           <div className="hidden md:flex items-center justify-end">
-            <RouterLink to="/auth">
+            <RouterLink to={handleAuthAction()}>
               <Button className="btn-primary shadow-lg hover:shadow-glow-primary transition-all duration-300">
                 <Wallet className="h-4 w-4 mr-2" />
-                Sign In / Connect Wallet
+                {isAuthenticated ? 'Connect Wallet' : 'Sign In / Connect Wallet'}
               </Button>
             </RouterLink>
           </div>
@@ -84,15 +97,15 @@ export const Navbar = () => {
               Contact
             </ScrollLink>
             <div className="pt-4 space-y-3">
-              <RouterLink to="/auth" className="block" onClick={() => setIsMobileMenuOpen(false)}>
+              <RouterLink to="/login" className="block" onClick={() => setIsMobileMenuOpen(false)}>
                 <Button variant="ghost" className="w-full text-foreground hover:text-primary">
                   Sign In
                 </Button>
               </RouterLink>
-              <RouterLink to="/auth" className="block" onClick={() => setIsMobileMenuOpen(false)}>
+              <RouterLink to={handleAuthAction()} className="block" onClick={() => setIsMobileMenuOpen(false)}>
                 <Button className="w-full btn-hero">
                   <Wallet className="h-4 w-4 mr-2" />
-                  Connect Wallet
+                  {isAuthenticated ? 'Connect Wallet' : 'Connect Wallet'}
                 </Button>
               </RouterLink>
             </div>

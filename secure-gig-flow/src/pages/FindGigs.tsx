@@ -6,9 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { DashboardLayout } from '@/components/ui/DashboardLayout';
 import { getUserData } from '../lib/user-utils';
 import { useToast } from '@/hooks/use-toast';
+import { useRealTimeJobs } from '@/hooks/useRealTimeJobs';
+import SimpleProposalForm from '@/components/proposals/SimpleProposalForm';
+import { apiClient } from '@/api/client';
 import { 
   LayoutDashboard, 
   Search,
@@ -20,189 +24,226 @@ import {
   MapPin,
   User,
   DollarSign,
-  Filter
+  Filter,
+  Briefcase,
+  X,
+  Calendar,
+  Star
 } from 'lucide-react';
+import { getStoredToken, isAuthenticated } from '@/services/authService';
+import { useNavigate } from 'react-router-dom';
 
 interface Gig {
-  id: number;
+  _id: string;
   title: string;
-  client: string;
-  clientWallet: string;
-  budget: string;
   description: string;
+  budget: {
+    type: 'fixed' | 'hourly';
+    amount: number;
+    currency: string;
+  };
   deadline: string;
   skills: string[];
-  location: string;
-  aboutClient: string;
   category: string;
-  postedDate: string;
+  client: {
+    name: string;
+    rating?: number;
+  };
+  createdAt: string;
+  status: string;
 }
 
 const FindGigs = () => {
-  const [gigs, setGigs] = useState<Gig[]>([]);
-  const [filteredGigs, setFilteredGigs] = useState<Gig[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedGig, setSelectedGig] = useState<Gig | null>(null);
+  const [selectedGig, setSelectedGig] = useState<any>(null);
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [proposalMessage, setProposalMessage] = useState('');
-  const [proposedTimeline, setProposedTimeline] = useState('');
-  const [additionalNotes, setAdditionalNotes] = useState('');
+  const [submittingProposal, setSubmittingProposal] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedBudgetRange, setSelectedBudgetRange] = useState('all');
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  
+  const { jobs, loading, error, connectionStatus, refetch, clearError } = useRealTimeJobs();
   
   const userData = getUserData();
   const userName = userData?.name || 'Freelancer';
   const userAvatar = userData?.avatar || '👨‍💻';
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  const filteredGigs = jobs.filter(job =>
+    job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    job.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    job.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    job.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (selectedCategory !== 'all' && job.category === selectedCategory) ||
+    (selectedBudgetRange !== 'all' && getBudgetRange(job.budget.amount) === selectedBudgetRange)
+  );
 
   const navLinks = [
     { href: '/freelancer-dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/find-gigs', label: 'Find Gigs', icon: Search },
     { href: '/my-proposals', label: 'My Proposals', icon: FileText },
     { href: '/my-contracts', label: 'My Contracts', icon: Shield },
-    { href: '/chat', label: 'Messages', icon: MessageSquare },
     { href: '/settings', label: 'Settings', icon: Settings },
   ];
 
-  // Mock gigs data
-  useEffect(() => {
-    const mockGigs: Gig[] = [
-      {
-        id: 1,
-        title: "Build a DeFi Dashboard",
-        client: "CryptoClient.eth",
-        clientWallet: "0x742d35Cc6634C0532925a3b8D2",
-        budget: "2.5 AVAX",
-        description: "Create a comprehensive DeFi dashboard with real-time data visualization and portfolio tracking capabilities. The dashboard should support multiple DeFi protocols and provide users with insights into their investments.",
-        deadline: "4 weeks",
-        skills: ["React", "Web3.js", "Chart.js", "TypeScript"],
-        location: "Remote",
-        aboutClient: "Experienced DeFi project founder looking for skilled developers to build next-generation financial tools.",
-        category: "Web Development",
-        postedDate: "2024-01-20"
-      },
-      {
-        id: 2,
-        title: "NFT Marketplace Smart Contract",
-        client: "NFTCreator.eth",
-        clientWallet: "0x8ba1f109551bD432803012645Hac136c",
-        budget: "3.0 AVAX",
-        description: "Develop and deploy smart contracts for an NFT marketplace with minting, trading, and royalty features. The platform should support ERC-721 and ERC-1155 standards with gas optimization.",
-        deadline: "6 weeks",
-        skills: ["Solidity", "Hardhat", "OpenZeppelin", "IPFS"],
-        location: "Remote",
-        aboutClient: "Digital artist and NFT enthusiast building a community-focused marketplace platform.",
-        category: "Blockchain Development",
-        postedDate: "2024-01-18"
-      },
-      {
-        id: 3,
-        title: "Mobile Crypto Wallet App",
-        client: "WalletTech.eth",
-        clientWallet: "0x1234567890abcdef1234567890abcdef12345678",
-        budget: "4.2 AVAX",
-        description: "Design and develop a secure mobile cryptocurrency wallet with multi-chain support and DeFi integration. The app should have biometric authentication and hardware wallet support.",
-        deadline: "8 weeks",
-        skills: ["React Native", "TypeScript", "Blockchain", "Security"],
-        location: "Remote",
-        aboutClient: "Fintech startup focused on making cryptocurrency accessible to mainstream users.",
-        category: "Mobile Development",
-        postedDate: "2024-01-15"
-      },
-      {
-        id: 4,
-        title: "Yield Farming Analytics Tool",
-        client: "YieldMaster.eth",
-        clientWallet: "0xabcdef1234567890abcdef1234567890abcdef12",
-        budget: "1.8 AVAX",
-        description: "Build a comprehensive yield farming analytics tool that tracks APY across different protocols and provides automated rebalancing suggestions.",
-        deadline: "5 weeks",
-        skills: ["Python", "Web3.py", "Data Analysis", "API Integration"],
-        location: "Remote",
-        aboutClient: "DeFi researcher and yield farmer looking to build tools for the community.",
-        category: "Data Analysis",
-        postedDate: "2024-01-22"
-      },
-      {
-        id: 5,
-        title: "Cross-Chain Bridge Interface",
-        client: "BridgeBuilder.eth",
-        clientWallet: "0x9876543210fedcba9876543210fedcba98765432",
-        budget: "5.0 AVAX",
-        description: "Create a user-friendly interface for a cross-chain bridge protocol. The interface should support multiple chains and provide real-time transaction tracking.",
-        deadline: "10 weeks",
-        skills: ["React", "Web3.js", "Multi-chain", "UI/UX"],
-        location: "Remote",
-        aboutClient: "Blockchain infrastructure company building interoperability solutions.",
-        category: "Web Development",
-        postedDate: "2024-01-19"
-      }
-    ];
-
-    setGigs(mockGigs);
-    setFilteredGigs(mockGigs);
-  }, []);
-
-  // Filter gigs based on search term
-  useEffect(() => {
-    if (searchTerm.trim() === '') {
-      setFilteredGigs(gigs);
-    } else {
-      const filtered = gigs.filter(gig =>
-        gig.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        gig.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        gig.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        gig.category.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredGigs(filtered);
-    }
-  }, [searchTerm, gigs]);
-
-  const handleApplyClick = (gig: Gig) => {
-    setSelectedGig(gig);
-    setShowApplyModal(true);
-    setProposalMessage('');
-    setProposedTimeline('');
-    setAdditionalNotes('');
-  };
-
-  const handleViewDetailsClick = (gig: Gig) => {
-    setSelectedGig(gig);
-    setShowDetailsModal(true);
-  };
-
-  const handleSubmitProposal = () => {
-    if (!proposalMessage.trim() || !proposedTimeline.trim()) {
+  const handleApplyClick = (job: any) => {
+    // Check authentication before opening modal
+    if (!isAuthenticated()) {
       toast({
-        title: "Missing Information",
-        description: "Please fill in proposal message and timeline.",
+        title: "Authentication Required",
+        description: "Please sign in to submit proposals",
         variant: "destructive"
       });
+      navigate('/login');
       return;
     }
 
-    // Save proposal to localStorage
-    const existingProposals = JSON.parse(localStorage.getItem('freelancerProposals') || '[]');
-    const newProposal = {
-      id: Date.now(),
-      gigId: selectedGig!.id,
-      gigTitle: selectedGig!.title,
-      clientName: selectedGig!.client,
-      proposalMessage,
-      proposedTimeline,
-      additionalNotes,
-      status: 'Pending',
-      appliedAt: new Date().toISOString(),
-      proposedAmount: selectedGig!.budget
+    // Ensure job has an ID before opening modal
+    const jobWithId = {
+      ...job,
+      _id: job._id || job.id || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     };
+    console.log('Setting selected gig with ID:', jobWithId._id);
+    setSelectedGig(jobWithId);
+    setSubmitError(null);
+    setShowApplyModal(true);
+  };
+
+  const handleViewDetailsClick = (job: any) => {
+    setSelectedGig(job);
+    setShowDetailsModal(true);
+  };
+
+  const handleSubmitProposal = async (proposalData: any) => {
+    console.log('🔍 DEBUG: Starting proposal submission...');
     
-    existingProposals.push(newProposal);
-    localStorage.setItem('freelancerProposals', JSON.stringify(existingProposals));
+    // Check authentication before submission
+    const isAuth = isAuthenticated();
+    console.log('🔍 DEBUG: isAuthenticated():', isAuth);
     
+    if (!isAuth) {
+      console.log('❌ DEBUG: User not authenticated, redirecting to login');
+      setSubmitError("Please sign in to submit proposals");
+      navigate('/login');
+      return;
+    }
+
+    try {
+      // Debug token retrieval
+      const token = getStoredToken();
+      console.log('🔍 DEBUG: Retrieved token from localStorage:', token ? `${token.substring(0, 20)}...` : 'null');
+      
+      // Check localStorage directly
+      const directToken = localStorage.getItem('authToken');
+      console.log('🔍 DEBUG: Direct localStorage authToken:', directToken ? `${directToken.substring(0, 20)}...` : 'null');
+      
+      // Check user data
+      const userData = localStorage.getItem('user');
+      console.log('🔍 DEBUG: User data exists:', !!userData);
+      
+      if (token) {
+        console.log('🔍 DEBUG: Setting auth token on API client...');
+        apiClient.setAuthToken(token);
+        console.log('🔍 DEBUG: Auth token set successfully');
+      } else {
+        console.log('❌ DEBUG: No authentication token found in localStorage');
+        throw new Error("No authentication token found");
+      }
+
+      // Validate jobId
+      const jobId = selectedGig?._id || selectedGig?.id;
+      console.log('🔍 DEBUG: Job ID for proposal:', jobId);
+      console.log('🔍 DEBUG: Selected job object:', selectedGig);
+      
+      if (!jobId) {
+        throw new Error("Job ID is required for proposal submission");
+      }
+
+      // Prepare proposal data with all required fields
+      const validatedData = {
+        jobId: jobId,
+        coverLetter: proposalData.coverLetter,
+        proposedRate: proposalData.proposedRate,
+        timeline: proposalData.timeline || {
+          duration: 1,
+          unit: 'weeks'
+        },
+        experience: proposalData.experience || 'Experienced freelancer ready to deliver quality work.',
+        portfolioLinks: proposalData.portfolioLinks || [],
+        estimatedDuration: proposalData.estimatedDuration,
+        milestones: proposalData.milestones || [],
+        attachments: proposalData.attachments || []
+      };
+
+      console.log('🔍 DEBUG: Validated proposal data:', validatedData);
+      console.log('🔍 DEBUG: Making API call to createProposal...');
+
+      const response = await apiClient.createProposal(validatedData);
+      
+      console.log('✅ DEBUG: Proposal submitted successfully:', response);
+      toast({
+        title: "Proposal Submitted Successfully!",
+        description: `Your proposal for "${selectedGig?.title}" has been sent to the client`,
+      });
+
+      setShowApplyModal(false);
+      setSelectedGig(null);
+      setSubmitError(null);
+      
+    } catch (error) {
+      console.log('Proposal submission error:', error);
+      
+      let errorMessage = "Failed to submit proposal";
+      
+      // Enhanced error handling like Fiverr/Upwork
+      if (error instanceof Error) {
+        if (error.message.includes('inactive job')) {
+          errorMessage = "This job is no longer accepting proposals. Please try applying to other similar jobs.";
+        } else if (error.message.includes('authentication') || error.message.includes('Authentication required')) {
+          errorMessage = "Please sign in to submit a proposal.";
+          navigate('/login');
+        } else if (error.message.includes('duplicate') || error.message.includes('already applied')) {
+          errorMessage = "You have already submitted a proposal for this job.";
+        } else if (error.message.includes('not found')) {
+          errorMessage = "This job is no longer available. It may have been removed or completed.";
+        } else {
+          errorMessage = error.message;
+        }
+      } else if (typeof error === 'object' && error !== null) {
+        const apiError = error as any;
+        if (apiError.response?.data?.message) {
+          errorMessage = apiError.response.data.message;
+        } else if (apiError.response?.data?.errors?.length > 0) {
+          console.log('Validation errors:', apiError.response.data.errors);
+          errorMessage = apiError.response.data.errors[0].message || apiError.response.data.errors[0];
+        } else if (apiError.message) {
+          errorMessage = apiError.message;
+        }
+      }
+      
+      console.error('Final error message:', errorMessage);
+      console.error('Full error object:', error);
+      setSubmitError(errorMessage);
+      
+      toast({
+        title: "Submission Failed",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    } finally {
+      setSubmittingProposal(false);
+      console.log('Submission process completed');
+    }
+  };
+
+  const handleCloseApplyModal = () => {
     setShowApplyModal(false);
-    toast({
-      title: "Successfully applied for gig!",
-      description: `Your proposal for "${selectedGig!.title}" has been submitted.`
-    });
+    setSelectedGig(null);
+    setSubmitError(null);
+    setSubmittingProposal(false);
   };
 
   const formatDate = (dateString: string) => {
@@ -213,220 +254,410 @@ const FindGigs = () => {
     });
   };
 
+  const getBudgetRange = (amount: number) => {
+    if (amount < 500) return '0-500';
+    if (amount < 1000) return '500-1000';
+    if (amount < 5000) return '1000-5000';
+    return '5000+';
+  };
+
   return (
-    <DashboardLayout navLinks={navLinks} userName={userName} userRole="Freelancer" userAvatar={userAvatar}>
-      <div className="space-y-8">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Find Gigs</h1>
-          <div className="text-sm text-muted-foreground">
-            {filteredGigs.length} gig{filteredGigs.length !== 1 ? 's' : ''} available
+    <DashboardLayout navLinks={navLinks}>
+      <div className="space-y-4 sm:space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Find Gigs</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
+              Discover opportunities that match your skills
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="text-xs sm:text-sm">
+              {filteredGigs.length} gigs available
+            </Badge>
           </div>
         </div>
 
         {/* Search and Filters */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Search & Filter</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search by title, description, skills, or category..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              <Button variant="outline">
-                <Filter className="h-4 w-4 mr-2" />
+        <Card className="p-4 sm:p-6">
+          <div className="space-y-4">
+            {/* Search Bar */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Search gigs by title, skills, or description..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 text-sm sm:text-base"
+              />
+            </div>
+
+            {/* Mobile Filter Toggle */}
+            <div className="flex items-center justify-between sm:hidden">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowMobileFilters(!showMobileFilters)}
+                className="flex items-center gap-2"
+              >
+                <Filter className="h-4 w-4" />
                 Filters
+                {(selectedCategory !== 'all' || selectedBudgetRange !== 'all') && (
+                  <Badge variant="secondary" className="ml-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                    {[selectedCategory !== 'all', selectedBudgetRange !== 'all'].filter(Boolean).length}
+                  </Badge>
+                )}
               </Button>
+              {(selectedCategory !== 'all' || selectedBudgetRange !== 'all') && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedCategory('all');
+                    setSelectedBudgetRange('all');
+                  }}
+                  className="text-xs"
+                >
+                  Clear all
+                </Button>
+              )}
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Gigs List */}
-        <div className="space-y-6">
-          {filteredGigs.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-16">
-                <Search className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No gigs found</h3>
-                <p className="text-muted-foreground text-center">
-                  {searchTerm ? 'Try adjusting your search terms or filters.' : 'Check back later for new opportunities.'}
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            filteredGigs.map((gig) => (
-              <Card key={gig.id} className="hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-xl">{gig.title}</CardTitle>
-                      <CardDescription className="mt-2">
-                        <div className="flex items-center gap-4 text-sm">
-                          <span className="flex items-center gap-1">
-                            <User className="h-4 w-4" />
-                            {gig.client}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <MapPin className="h-4 w-4" />
-                            {gig.location}
-                          </span>
-                          <span className="text-muted-foreground">
-                            Posted {formatDate(gig.postedDate)}
-                          </span>
-                        </div>
-                      </CardDescription>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-lg font-semibold text-green-600">{gig.budget}</div>
-                      <div className="text-sm text-muted-foreground flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {gig.deadline}
-                      </div>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <p className="text-muted-foreground">
-                      {gig.description.length > 200 
-                        ? `${gig.description.substring(0, 200)}...` 
-                        : gig.description
-                      }
-                    </p>
-
-                    <div>
-                      <h4 className="font-medium mb-2">Required Skills</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {gig.skills.map((skill) => (
-                          <Badge key={skill} variant="secondary">{skill}</Badge>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-4 border-t">
-                      <Badge variant="outline">{gig.category}</Badge>
-                      <div className="flex gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => handleViewDetailsClick(gig)}
-                        >
-                          View Details
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          onClick={() => handleApplyClick(gig)}
-                        >
-                          Apply Now
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
-
-        {/* Apply Modal */}
-        <Dialog open={showApplyModal} onOpenChange={setShowApplyModal}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Apply for {selectedGig?.title}</DialogTitle>
-              <DialogDescription>Submit your proposal for this gig</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="proposal">Proposal Message *</Label>
-                <Textarea
-                  id="proposal"
-                  placeholder="Describe your approach, experience, and why you're the best fit for this project..."
-                  value={proposalMessage}
-                  onChange={(e) => setProposalMessage(e.target.value)}
-                  rows={4}
-                />
+            {/* Desktop Filters - Always visible */}
+            <div className="hidden sm:flex flex-wrap gap-4">
+              <div className="flex-1 min-w-[200px]">
+                <Label htmlFor="category" className="text-sm font-medium">Category</Label>
+                <select
+                  id="category"
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full mt-1 px-3 py-2 border border-input bg-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="all">All Categories</option>
+                  <option value="Web Development">Web Development</option>
+                  <option value="Mobile Development">Mobile Development</option>
+                  <option value="Design">Design</option>
+                  <option value="Writing">Writing</option>
+                  <option value="Marketing">Marketing</option>
+                  <option value="Data Science">Data Science</option>
+                </select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="timeline">Proposed Timeline *</Label>
-                <Input
-                  id="timeline"
-                  placeholder="e.g., 3 weeks, 1 month"
-                  value={proposedTimeline}
-                  onChange={(e) => setProposedTimeline(e.target.value)}
-                />
+              <div className="flex-1 min-w-[200px]">
+                <Label htmlFor="budget" className="text-sm font-medium">Budget Range</Label>
+                <select
+                  id="budget"
+                  value={selectedBudgetRange}
+                  onChange={(e) => setSelectedBudgetRange(e.target.value)}
+                  className="w-full mt-1 px-3 py-2 border border-input bg-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="all">All Budgets</option>
+                  <option value="0-500">$0 - $500</option>
+                  <option value="500-1000">$500 - $1,000</option>
+                  <option value="1000-5000">$1,000 - $5,000</option>
+                  <option value="5000+">$5,000+</option>
+                </select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="notes">Additional Skills/Notes (Optional)</Label>
-                <Textarea
-                  id="notes"
-                  placeholder="Any additional information, skills, or questions..."
-                  value={additionalNotes}
-                  onChange={(e) => setAdditionalNotes(e.target.value)}
-                  rows={3}
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={() => setShowApplyModal(false)}>Cancel</Button>
-                <Button onClick={handleSubmitProposal}>Submit Proposal</Button>
-              </div>
+              {(selectedCategory !== 'all' || selectedBudgetRange !== 'all') && (
+                <div className="flex items-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedCategory('all');
+                      setSelectedBudgetRange('all');
+                    }}
+                    className="flex items-center gap-2"
+                  >
+                    <X className="h-4 w-4" />
+                    Clear
+                  </Button>
+                </div>
+              )}
             </div>
-          </DialogContent>
-        </Dialog>
 
-        {/* Details Modal */}
-        <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>{selectedGig?.title}</DialogTitle>
-              <DialogDescription>Gig Details</DialogDescription>
-            </DialogHeader>
-            {selectedGig && (
-              <div className="space-y-4">
+            {/* Mobile Filters - Collapsible */}
+            {showMobileFilters && (
+              <div className="sm:hidden space-y-4 border-t pt-4">
                 <div>
-                  <h4 className="font-semibold mb-2">About the Client</h4>
-                  <p className="text-sm text-muted-foreground mb-2">{selectedGig.aboutClient}</p>
-                  <p className="text-sm"><span className="font-medium">Client:</span> {selectedGig.client}</p>
+                  <Label htmlFor="mobile-category" className="text-sm font-medium">Category</Label>
+                  <select
+                    id="mobile-category"
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="w-full mt-1 px-3 py-2 border border-input bg-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    <option value="all">All Categories</option>
+                    <option value="Web Development">Web Development</option>
+                    <option value="Mobile Development">Mobile Development</option>
+                    <option value="Design">Design</option>
+                    <option value="Writing">Writing</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Data Science">Data Science</option>
+                  </select>
                 </div>
                 <div>
-                  <h4 className="font-semibold mb-2">Budget</h4>
-                  <p className="text-lg font-semibold text-green-600">{selectedGig.budget}</p>
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-2">Work Description</h4>
-                  <p className="text-sm text-muted-foreground">{selectedGig.description}</p>
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-2">Deadline</h4>
-                  <p className="text-sm">{selectedGig.deadline}</p>
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-2">Required Skills</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedGig.skills.map((skill: string) => (
-                      <Badge key={skill} variant="secondary">{skill}</Badge>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button variant="outline" onClick={() => setShowDetailsModal(false)}>Close</Button>
-                  <Button onClick={() => {
-                    setShowDetailsModal(false);
-                    handleApplyClick(selectedGig);
-                  }}>Apply for this Gig</Button>
+                  <Label htmlFor="mobile-budget" className="text-sm font-medium">Budget Range</Label>
+                  <select
+                    id="mobile-budget"
+                    value={selectedBudgetRange}
+                    onChange={(e) => setSelectedBudgetRange(e.target.value)}
+                    className="w-full mt-1 px-3 py-2 border border-input bg-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    <option value="all">All Budgets</option>
+                    <option value="0-500">$0 - $500</option>
+                    <option value="500-1000">$500 - $1,000</option>
+                    <option value="1000-5000">$1,000 - $5,000</option>
+                    <option value="5000+">$5,000+</option>
+                  </select>
                 </div>
               </div>
             )}
-          </DialogContent>
-        </Dialog>
+          </div>
+        </Card>
+
+        {/* Gigs Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+          {filteredGigs.map((gig) => (
+            <Card key={gig._id} className="flex flex-col hover:shadow-lg transition-shadow duration-200">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-base sm:text-lg font-semibold line-clamp-2 leading-tight">
+                      {gig.title}
+                    </CardTitle>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge variant="outline" className="text-xs">
+                        {gig.category}
+                      </Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        {gig.budget.type === 'fixed' ? 'Fixed Price' : 'Hourly'}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+
+              <CardContent className="flex-1 flex flex-col gap-3 sm:gap-4">
+                <CardDescription className="text-sm line-clamp-3 flex-1">
+                  {gig.description}
+                </CardDescription>
+
+                {/* Skills */}
+                <div className="flex flex-wrap gap-1 sm:gap-2">
+                  {gig.skills.slice(0, 4).map((skill, index) => (
+                    <Badge key={index} variant="secondary" className="text-xs px-2 py-1">
+                      {skill}
+                    </Badge>
+                  ))}
+                  {gig.skills.length > 4 && (
+                    <Badge variant="outline" className="text-xs px-2 py-1">
+                      +{gig.skills.length - 4} more
+                    </Badge>
+                  )}
+                </div>
+
+                {/* Gig Details */}
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 flex-shrink-0" />
+                    <span className="font-medium text-foreground">
+                      ${gig.budget.amount.toLocaleString()}
+                      {gig.budget.type === 'hourly' && '/hr'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 flex-shrink-0" />
+                    <span>Due {new Date(gig.deadline).toLocaleDateString()}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 flex-shrink-0" />
+                    <span>{gig.client.name}</span>
+                    {gig.client.rating && (
+                      <div className="flex items-center gap-1">
+                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                        <span className="text-xs">{gig.client.rating.toFixed(1)}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-2 mt-auto pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleViewDetailsClick(gig)}
+                    className="flex-1 text-xs sm:text-sm"
+                  >
+                    View Details
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => handleApplyClick(gig)}
+                    className="flex-1 text-xs sm:text-sm"
+                  >
+                    Apply Now
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Empty State */}
+        {filteredGigs.length === 0 && (
+          <Card className="p-8 sm:p-12 text-center">
+            <div className="flex flex-col items-center gap-4">
+              <Briefcase className="h-12 w-12 sm:h-16 sm:w-16 text-muted-foreground" />
+              <div>
+                <h3 className="text-lg sm:text-xl font-semibold">No gigs found</h3>
+                <p className="text-sm sm:text-base text-muted-foreground mt-2">
+                  Try adjusting your search criteria or check back later for new opportunities.
+                </p>
+              </div>
+              {(searchTerm || selectedCategory !== 'all' || selectedBudgetRange !== 'all') && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSearchTerm('');
+                    setSelectedCategory('all');
+                    setSelectedBudgetRange('all');
+                  }}
+                  className="text-sm"
+                >
+                  Clear all filters
+                </Button>
+              )}
+            </div>
+          </Card>
+        )}
       </div>
+
+      {/* Gig Details Modal */}
+      <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          {selectedGig && (
+            <div className="space-y-4 sm:space-y-6">
+              <DialogHeader>
+                <DialogTitle className="text-xl sm:text-2xl font-bold leading-tight">
+                  {selectedGig.title}
+                </DialogTitle>
+                <div className="flex flex-wrap items-center gap-2 mt-2">
+                  <Badge variant="outline">{selectedGig.category}</Badge>
+                  <Badge variant="secondary">
+                    {selectedGig.budget.type === 'fixed' ? 'Fixed Price' : 'Hourly'}
+                  </Badge>
+                </div>
+              </DialogHeader>
+
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-semibold text-sm sm:text-base mb-2">Description</h4>
+                  <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                    {selectedGig.description}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="font-semibold text-sm mb-2">Budget</h4>
+                    <p className="text-lg font-bold text-green-600">
+                      ${selectedGig.budget.amount.toLocaleString()}
+                      {selectedGig.budget.type === 'hourly' && '/hr'}
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-sm mb-2">Deadline</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(selectedGig.deadline).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-sm mb-2">Required Skills</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedGig.skills.map((skill, index) => (
+                      <Badge key={index} variant="secondary" className="text-xs">
+                        {skill}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-sm mb-2">Client Information</h4>
+                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                    <div className="h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center">
+                      <User className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">{selectedGig.client.name}</p>
+                      {selectedGig.client.rating && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                          <span className="text-xs text-muted-foreground">
+                            {selectedGig.client.rating.toFixed(1)} rating
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowDetailsModal(false)}
+                    className="flex-1"
+                  >
+                    Close
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setShowDetailsModal(false);
+                      handleApplyClick(selectedGig);
+                    }}
+                    className="flex-1"
+                  >
+                    Apply for this Gig
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Application Modal */}
+      <Dialog open={showApplyModal} onOpenChange={setShowApplyModal}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg sm:text-xl">Apply for Gig</DialogTitle>
+            <DialogDescription className="text-sm">
+              Submit your proposal for "{selectedGig?.title}"
+            </DialogDescription>
+          </DialogHeader>
+          
+          {submitError && (
+            <Alert variant="destructive">
+              <AlertDescription className="text-sm">{submitError}</AlertDescription>
+            </Alert>
+          )}
+          
+          <SimpleProposalForm
+            job={selectedGig}
+            onSubmit={handleSubmitProposal}
+            onCancel={handleCloseApplyModal}
+            isSubmitting={submittingProposal}
+          />
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };

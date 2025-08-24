@@ -76,7 +76,7 @@ export async function estimateDepositGas(
     
     return { gas, fees, tx };
   } catch (error) {
-    logger.error('Error estimating deposit gas:', error);
+    logger.error('Error estimating deposit gas:', error as Record<string, any>);
     throw new Error('Failed to estimate deposit gas');
   }
 }
@@ -94,7 +94,7 @@ export async function estimateReleaseGas(from: string, jobId: number): Promise<G
     
     return { gas, fees, tx };
   } catch (error) {
-    logger.error('Error estimating release gas:', error);
+    logger.error('Error estimating release gas:', error as Record<string, any>);
     throw new Error('Failed to estimate release gas');
   }
 }
@@ -116,7 +116,7 @@ export async function estimateDisputeGas(
     
     return { gas, fees, tx };
   } catch (error) {
-    logger.error('Error estimating dispute gas:', error);
+    logger.error('Error estimating dispute gas:', error as Record<string, any>);
     throw new Error('Failed to estimate dispute gas');
   }
 }
@@ -144,7 +144,7 @@ export async function relayDeposit(
     logger.info(`Relayed deposit transaction: ${tx.hash}`);
     return tx.hash;
   } catch (error) {
-    logger.error('Error relaying deposit:', error);
+    logger.error('Error relaying deposit:', error as Record<string, any>);
     throw new Error('Failed to relay deposit transaction');
   }
 }
@@ -166,7 +166,7 @@ export async function relayRelease(jobId: number): Promise<string> {
     logger.info(`Relayed release transaction: ${tx.hash}`);
     return tx.hash;
   } catch (error) {
-    logger.error('Error relaying release:', error);
+    logger.error('Error relaying release:', error as Record<string, any>);
     throw new Error('Failed to relay release transaction');
   }
 }
@@ -188,7 +188,7 @@ export async function relayDispute(jobId: number, reason: string): Promise<strin
     logger.info(`Relayed dispute transaction: ${tx.hash}`);
     return tx.hash;
   } catch (error) {
-    logger.error('Error relaying dispute:', error);
+    logger.error('Error relaying dispute:', error as Record<string, any>);
     throw new Error('Failed to relay dispute transaction');
   }
 }
@@ -199,6 +199,12 @@ export async function getJobState(jobId: number): Promise<JobState> {
     const contract = new Contract(env.ESCROW_ADDRESS, escrowAbi as any, provider);
     const [client, freelancer, token, amount, state] = await contract.job(jobId);
     
+    const response = await fetch(env.AVAX_RPC_HTTP, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_getTransactionCount', params: [client, 'latest'], id: 1 } as Record<string, any>)
+    });
+
     const result = {
       client,
       freelancer,
@@ -210,7 +216,7 @@ export async function getJobState(jobId: number): Promise<JobState> {
     logger.debug(`Retrieved job state for job ${jobId}:`, result);
     return result;
   } catch (error) {
-    logger.error(`Error getting job state for job ${jobId}:`, error);
+    logger.error(`Error getting job state for job ${jobId}:`, error as Record<string, any>);
     throw new Error('Failed to get job state');
   }
 }
@@ -220,7 +226,7 @@ export function decodeEscrowEvent(log: any): any {
   try {
     return iface.parseLog(log);
   } catch (error) {
-    logger.warn('Failed to decode escrow event:', error);
+    logger.warn('Failed to decode escrow event:', error as Record<string, any>);
     return null;
   }
 }

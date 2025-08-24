@@ -8,6 +8,9 @@ import { WalletConnect } from '@/components/wallet/WalletConnect';
 import { BlockchainInfo } from '@/components/wallet/BlockchainInfo';
 import { TransactionSender } from '@/components/wallet/TransactionSender';
 import { NearbyMapContainer } from '@/map';
+import ChatWithUser from '@/components/ui/ChatWithUser';
+import { EscrowButton } from '@/components/escrow/EscrowButton';
+import { EscrowStatus } from '@/components/escrow/EscrowStatus';
 import { 
   LayoutDashboard, 
   Briefcase, 
@@ -41,7 +44,6 @@ const ClientDashboard = () => {
     { href: '/proposals', label: 'Proposals', icon: FileText },
     { href: '/contracts', label: 'Contracts', icon: Shield },
     { href: '/escrow', label: 'Escrow', icon: DollarSign },
-    { href: '/chat', label: 'Messages', icon: MessageSquare },
     { href: '/settings', label: 'Settings', icon: Settings },
   ];
 
@@ -58,6 +60,36 @@ const ClientDashboard = () => {
       proposals: 8,
       status: "In Progress",
     },
+  ];
+
+  const mockFreelancers = [
+    {
+      id: 1,
+      name: "Alex.eth",
+      skills: ["React", "Solidity", "Web3"],
+      rating: 4.8,
+      whatsappNumber: "+1234567890",
+      gigTitle: "Build a DeFi Dashboard",
+      proposalAmount: "2.5 AVAX"
+    },
+    {
+      id: 2,
+      name: "Sarah.crypto",
+      skills: ["Smart Contracts", "DeFi", "Auditing"],
+      rating: 4.9,
+      whatsappNumber: "+9876543210",
+      gigTitle: "NFT Marketplace Smart Contract",
+      proposalAmount: "5.0 AVAX"
+    },
+    {
+      id: 3,
+      name: "Dev.sol",
+      skills: ["Solidity", "Testing", "Security"],
+      rating: 4.7,
+      whatsappNumber: "+1122334455",
+      gigTitle: "Build a DeFi Dashboard",
+      proposalAmount: "3.2 AVAX"
+    }
   ];
 
   return (
@@ -110,31 +142,88 @@ const ClientDashboard = () => {
         
         <NearbyMapContainer />
 
-        <Card>
-          <CardHeader>
-            <CardTitle>My Gigs</CardTitle>
-            <CardDescription>Manage your posted gigs and view proposals.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {mockGigs.map(gig => (
-                <Card key={gig.id} className="p-4">
-                  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                    <div>
-                      <h3 className="font-semibold">{gig.title}</h3>
-                      <p className="text-sm text-muted-foreground">{gig.proposals} proposals</p>
+        <EscrowStatus
+          gigIds={mockGigs.map(gig => gig.id)}
+          userRole="client"
+          userAddress="0x1234567890abcdef1234567890abcdef12345678"
+        />
+
+        <div className="grid gap-6 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>My Gigs</CardTitle>
+              <CardDescription>Manage your posted gigs and view proposals.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {mockGigs.map(gig => (
+                  <Card key={gig.id} className="p-4">
+                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                      <div>
+                        <h3 className="font-semibold">{gig.title}</h3>
+                        <p className="text-sm text-muted-foreground">{gig.proposals} proposals</p>
+                      </div>
+                      <div className="flex items-center gap-2 sm:gap-4 self-end sm:self-center">
+                        <Badge variant={gig.status === 'Open' ? 'default' : 'secondary'}>{gig.status}</Badge>
+                        <Button variant="outline" size="sm" onClick={() => handleViewProposals(gig.id)}>Proposals</Button>
+                        <Button size="sm" onClick={() => handleManageGig(gig.id)}>Manage</Button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 sm:gap-4 self-end sm:self-center">
-                      <Badge variant={gig.status === 'Open' ? 'default' : 'secondary'}>{gig.status}</Badge>
-                      <Button variant="outline" size="sm" onClick={() => handleViewProposals(gig.id)}>Proposals</Button>
-                      <Button size="sm" onClick={() => handleManageGig(gig.id)}>Manage</Button>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Proposals</CardTitle>
+              <CardDescription>Chat with freelancers who submitted proposals.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {mockFreelancers.map(freelancer => (
+                  <Card key={freelancer.id} className="p-4">
+                    <div className="flex flex-col gap-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-semibold">{freelancer.name}</h4>
+                          <p className="text-sm text-muted-foreground">⭐ {freelancer.rating} • {freelancer.proposalAmount}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <EscrowButton
+                            gigId={freelancer.id}
+                            gigTitle={freelancer.gigTitle}
+                            freelancerAddress="0x742d35Cc6634C0532925a3b8D0C9C3f6692c8b4c"
+                            proposalAmount={freelancer.proposalAmount}
+                            userRole="client"
+                          />
+                          <ChatWithUser
+                            phoneNumber={freelancer.whatsappNumber}
+                            userName={freelancer.name}
+                            gigTitle={freelancer.gigTitle}
+                            message="I'd like to discuss your proposal for my project."
+                            size="sm"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {freelancer.skills.slice(0, 3).map(skill => (
+                          <Badge key={skill} variant="outline" className="text-xs">
+                            {skill}
+                          </Badge>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Proposal for: {freelancer.gigTitle}
+                      </p>
                     </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {showPostGigModal && (
           <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">

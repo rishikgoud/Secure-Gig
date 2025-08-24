@@ -10,13 +10,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { useJobs } from '@/hooks/useJobs';
 import { DashboardLayout } from '@/components/ui/DashboardLayout';
 import { getUserData } from '../lib/user-utils';
+import { JobPost } from '@/api/types';
+import ProposalManagement from '@/components/proposals/ProposalManagement';
 import { 
   LayoutDashboard, 
   Briefcase, 
   FileText, 
-  MessageSquare, 
+  MessageCircle, 
   Shield, 
   Settings,
   DollarSign,
@@ -34,19 +38,7 @@ import {
   SlidersHorizontal
 } from 'lucide-react';
 
-interface Gig {
-  id: number;
-  title: string;
-  description: string;
-  budget: string;
-  timeline: string;
-  skills: string[];
-  category: string;
-  proposals: number;
-  status: string;
-  createdAt: string;
-  assignedTo?: string;
-}
+// Using JobPost type from API types instead of local Gig interface
 
 interface Proposal {
   id: number;
@@ -63,73 +55,37 @@ interface Proposal {
 const MyGigs = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, isAuthenticated } = useAuth();
+  const {
+    myJobs,
+    categories: jobCategories,
+    popularSkills,
+    isLoading,
+    fetchMyJobs,
+    fetchJobCategories,
+    fetchPopularSkills,
+    createJob,
+    updateJob,
+    deleteJob,
+    updateJobStatus
+  } = useJobs();
   
   const [showEditModal, setShowEditModal] = useState(false);
   const [showProposalsModal, setShowProposalsModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showPortfolioModal, setShowPortfolioModal] = useState(false);
   const [showPostGigModal, setShowPostGigModal] = useState(false);
-  const [selectedGig, setSelectedGig] = useState<Gig | null>(null);
+  const [selectedGig, setSelectedGig] = useState<JobPost | null>(null);
   const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
-  const [gigToDelete, setGigToDelete] = useState<number | null>(null);
+  const [gigToDelete, setGigToDelete] = useState<string | null>(null);
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [budgetFilter, setBudgetFilter] = useState<string>('');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
-  const [filteredGigs, setFilteredGigs] = useState<Gig[]>([]);
+  const [filteredGigs, setFilteredGigs] = useState<JobPost[]>([]);
   
-  const [gigs, setGigs] = useState<Gig[]>([
-    {
-      id: 1,
-      title: "Build a DeFi Dashboard",
-      description: "Create a comprehensive DeFi dashboard with real-time data visualization and portfolio tracking.",
-      budget: "2.5",
-      timeline: "4 weeks",
-      skills: ["React", "Web3.js", "Chart.js"],
-      category: "Web Development",
-      proposals: 12,
-      status: "Open",
-      createdAt: "2024-01-15"
-    },
-    {
-      id: 2,
-      title: "NFT Marketplace Smart Contract",
-      description: "Develop and deploy smart contracts for an NFT marketplace with minting and trading capabilities.",
-      budget: "3.0",
-      timeline: "6 weeks",
-      skills: ["Solidity", "Hardhat", "Ethers.js"],
-      category: "Blockchain Development",
-      proposals: 8,
-      status: "Assigned",
-      assignedTo: "BlockchainPro.eth",
-      createdAt: "2024-01-10"
-    },
-    {
-      id: 3,
-      title: "Mobile Crypto Wallet App",
-      description: "Design and develop a secure mobile cryptocurrency wallet with multi-chain support.",
-      budget: "4.2",
-      timeline: "8 weeks",
-      skills: ["React Native", "TypeScript", "Blockchain"],
-      category: "Mobile Development",
-      proposals: 15,
-      status: "Open",
-      createdAt: "2024-01-20"
-    },
-    {
-      id: 4,
-      title: "Smart Contract Audit",
-      description: "Comprehensive security audit of DeFi smart contracts with detailed vulnerability report.",
-      budget: "1.8",
-      timeline: "3 weeks",
-      skills: ["Solidity", "Security", "Audit"],
-      category: "Smart Contracts",
-      proposals: 6,
-      status: "In Progress",
-      createdAt: "2024-01-12"
-    }
-  ]);
+  // Jobs are now managed by useJobs hook
   
   const [formData, setFormData] = useState({
     title: '',
@@ -144,22 +100,30 @@ const MyGigs = () => {
     title: '',
     description: '',
     budget: '',
+    budgetType: 'fixed',
+    currency: 'AVAX',
     timeline: '',
+    timelineUnit: 'weeks',
     skills: '',
     category: '',
-    experience: ''
+    experienceLevel: 'intermediate',
+    locationType: 'remote',
+    city: '',
+    country: '',
+    portfolioRequired: true,
+    testRequired: true,
+    urgency: 'high'
   });
 
   const userData = getUserData();
-  const userName = userData?.name || 'Client';
-  const userAvatar = userData?.avatar || '👤';
+  const userName = user?.name || userData?.name || 'Client';
+  const userAvatar = userData?.avatar || '';
   
   const navLinks = [
     { href: '/client-dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/my-gigs', label: 'My Gigs', icon: Briefcase },
     { href: '/proposals', label: 'Proposals', icon: FileText },
     { href: '/contracts', label: 'Contracts', icon: Shield },
-    { href: '/chat', label: 'Messages', icon: MessageSquare },
     { href: '/settings', label: 'Settings', icon: Settings },
   ];
 
@@ -188,8 +152,14 @@ const MyGigs = () => {
     }
   ];
 
-  // Fetch wallet balance on component mount
+  // Fetch data on component mount
   useEffect(() => {
+    if (isAuthenticated) {
+      fetchMyJobs();
+      fetchJobCategories();
+      fetchPopularSkills();
+    }
+    
     const fetchBalance = async () => {
       const address = localStorage.getItem('walletAddress');
       if (address && window.ethereum) {
@@ -206,91 +176,82 @@ const MyGigs = () => {
       }
     };
     fetchBalance();
-  }, []);
+  }, [isAuthenticated, fetchMyJobs, fetchJobCategories, fetchPopularSkills]);
 
-  // Filter gigs based on search and filters
+  // Filter jobs based on search and filters
   useEffect(() => {
-    let filtered = gigs;
+    let filtered = myJobs;
 
     // Search filter
     if (searchQuery) {
-      filtered = filtered.filter(gig => 
-        gig.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        gig.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        gig.skills.some(skill => skill.toLowerCase().includes(searchQuery.toLowerCase()))
+      filtered = filtered.filter(job => 
+        job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        job.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        job.skills.some(skill => skill.toLowerCase().includes(searchQuery.toLowerCase()))
       );
     }
 
     // Budget filter
     if (budgetFilter) {
       const budget = parseFloat(budgetFilter);
-      filtered = filtered.filter(gig => parseFloat(gig.budget) <= budget);
+      filtered = filtered.filter(job => job.budget.amount <= budget);
     }
 
     // Category filter
     if (categoryFilter) {
-      filtered = filtered.filter(gig => gig.category === categoryFilter);
+      filtered = filtered.filter(job => job.category === categoryFilter);
     }
 
     // Status filter
     if (statusFilter) {
-      filtered = filtered.filter(gig => gig.status === statusFilter);
+      filtered = filtered.filter(job => job.status === statusFilter);
     }
 
     setFilteredGigs(filtered);
-  }, [gigs, searchQuery, budgetFilter, categoryFilter, statusFilter]);
+  }, [myJobs, searchQuery, budgetFilter, categoryFilter, statusFilter]);
 
-  // Initialize filtered gigs
+  // Initialize filtered jobs
   useEffect(() => {
-    setFilteredGigs(gigs);
-  }, [gigs]);
+    setFilteredGigs(myJobs);
+  }, [myJobs]);
 
-  const handleManageGig = (gig: Gig) => {
-    setSelectedGig(gig);
+  const handleManageGig = (job: JobPost) => {
+    setSelectedGig(job);
     setFormData({
-      title: gig.title,
-      description: gig.description,
-      budget: gig.budget,
-      timeline: gig.timeline,
-      skills: gig.skills.join(', '),
-      category: gig.category
+      title: job.title,
+      description: job.description,
+      budget: job.budget.amount.toString(),
+      timeline: typeof job.timeline === 'string' ? job.timeline : `${job.timeline.duration} ${job.timeline.unit}`,
+      skills: job.skills.join(', '),
+      category: job.category
     });
     setShowEditModal(true);
   };
 
-  const handleViewProposals = (gig: Gig) => {
-    setSelectedGig(gig);
+  const handleViewProposals = (job: JobPost) => {
+    setSelectedGig(job);
     setShowProposalsModal(true);
   };
 
-  const handleDeleteGig = (gigId: number) => {
-    setGigToDelete(gigId);
+  const handleDeleteGig = (jobId: string) => {
+    setGigToDelete(jobId);
     setShowDeleteConfirm(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (gigToDelete) {
-      const gigToRemove = gigs.find(g => g.id === gigToDelete);
-      setGigs(gigs.filter(gig => gig.id !== gigToDelete));
-      
-      // Remove associated proposals from localStorage
-      const existingProposals = JSON.parse(localStorage.getItem('proposals') || '[]');
-      const updatedProposals = existingProposals.filter((proposal: any) => proposal.gigId !== gigToDelete);
-      localStorage.setItem('proposals', JSON.stringify(updatedProposals));
-      
-      setGigToDelete(null);
-      setShowDeleteConfirm(false);
-      
-      if (gigToRemove) {
-        toast({
-          title: "Gig Deleted",
-          description: `"${gigToRemove.title}" and all associated proposals have been permanently deleted.`
-        });
+      try {
+        await deleteJob(gigToDelete);
+        setGigToDelete(null);
+        setShowDeleteConfirm(false);
+      } catch (error) {
+        // Error handling is done in the hook
+        console.error('Delete failed:', error);
       }
     }
   };
 
-  const handleUpdateGig = () => {
+  const handleUpdateGig = async () => {
     if (selectedGig && formData.title && formData.description && formData.budget) {
       const budgetAmount = parseFloat(formData.budget);
       
@@ -312,28 +273,31 @@ const MyGigs = () => {
         return;
       }
       
-      const updatedGigs = gigs.map(gig => 
-        gig.id === selectedGig.id 
-          ? {
-              ...gig,
-              title: formData.title,
-              description: formData.description,
-              budget: formData.budget,
-              timeline: formData.timeline,
-              skills: formData.skills.split(',').map(s => s.trim()).filter(s => s),
-              category: formData.category
-            }
-          : gig
-      );
-      setGigs(updatedGigs);
-      resetForm();
-      setShowEditModal(false);
-      setSelectedGig(null);
-      
-      toast({
-        title: "Gig Updated Successfully!",
-        description: `Your gig "${formData.title}" has been updated.`
-      });
+      try {
+        const updateData = {
+          title: formData.title,
+          description: formData.description,
+          budget: {
+            type: 'fixed' as const,
+            amount: budgetAmount,
+            currency: 'AVAX'
+          },
+          timeline: {
+            duration: parseInt(formData.timeline.split(' ')[0]) || 1,
+            unit: 'weeks' as const
+          },
+          skills: formData.skills.split(',').map(s => s.trim()).filter(s => s),
+          category: formData.category as any
+        };
+        
+        await updateJob(selectedGig._id, updateData);
+        resetForm();
+        setShowEditModal(false);
+        setSelectedGig(null);
+      } catch (error) {
+        // Error handling is done in the hook
+        console.error('Update failed:', error);
+      }
     }
   };
 
@@ -352,20 +316,19 @@ const MyGigs = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleAcceptProposal = (proposal: Proposal) => {
+  const handleAcceptProposal = async (proposal: Proposal) => {
     if (selectedGig) {
-      const updatedGigs = gigs.map(gig => 
-        gig.id === selectedGig.id 
-          ? { ...gig, status: 'Assigned', assignedTo: proposal.freelancerName }
-          : gig
-      );
-      setGigs(updatedGigs);
-      setShowProposalsModal(false);
-      
-      toast({
-        title: "Gig Assigned Successfully!",
-        description: `Your gig "${selectedGig.title}" has been successfully assigned to ${proposal.freelancerName}.`
-      });
+      try {
+        await updateJobStatus(selectedGig._id, 'active');
+        setShowProposalsModal(false);
+        
+        toast({
+          title: "Gig Assigned Successfully!",
+          description: `Your gig "${selectedGig.title}" has been successfully assigned to ${proposal.freelancerName}.`
+        });
+      } catch (error) {
+        console.error('Failed to accept proposal:', error);
+      }
     }
   };
 
@@ -392,8 +355,8 @@ const MyGigs = () => {
     setStatusFilter('');
   };
 
-  const categories = [...new Set(gigs.map(gig => gig.category))];
-  const statuses = [...new Set(gigs.map(gig => gig.status))];
+  const availableCategories = jobCategories.length > 0 ? jobCategories : ['Web Development', 'Blockchain Development', 'Mobile Development', 'Smart Contracts', 'UI/UX Design', 'Data Science'];
+  const statuses = ['draft', 'active', 'paused', 'completed', 'cancelled'];
 
   return (
     <DashboardLayout navLinks={navLinks} userName={userName} userRole="Client" userAvatar={userAvatar}>
@@ -442,7 +405,7 @@ const MyGigs = () => {
                     <SelectValue placeholder="Category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map(category => (
+                    {availableCategories.map(category => (
                       <SelectItem key={category} value={category}>{category}</SelectItem>
                     ))}
                   </SelectContent>
@@ -467,47 +430,47 @@ const MyGigs = () => {
         </div>
         
         <div className="grid grid-cols-1 gap-6">
-          {filteredGigs.map(gig => (
-            <Card key={gig.id} className="p-6 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] border-l-4 border-l-primary/20 hover:border-l-primary/60">
+          {filteredGigs.map(job => (
+            <Card key={job._id} className="p-6 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] border-l-4 border-l-primary/20 hover:border-l-primary/60">
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col lg:flex-row justify-between lg:items-start gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-semibold text-xl">{gig.title}</h3>
-                      <Badge variant={gig.status === 'Open' ? 'default' : gig.status === 'Assigned' ? 'secondary' : 'outline'}>
-                        {gig.status === 'Assigned' ? `Assigned to ${gig.assignedTo}` : gig.status}
+                      <h3 className="font-semibold text-xl">{job.title}</h3>
+                      <Badge variant={job.status === 'active' ? 'default' : job.status === 'completed' ? 'secondary' : 'outline'}>
+                        {job.status}
                       </Badge>
                     </div>
-                    <p className="text-muted-foreground mb-3">{gig.description}</p>
+                    <p className="text-muted-foreground mb-3">{job.description}</p>
                     <div className="flex items-center gap-6 mb-3 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <DollarSign className="h-4 w-4" />
-                        {gig.budget} AVAX
+                        {job.budget.amount} {job.budget.currency}
                       </span>
                       <span className="flex items-center gap-1">
                         <Calendar className="h-4 w-4" />
-                        {gig.timeline}
+                        {typeof job.timeline === 'string' ? job.timeline : `${job.timeline.duration} ${job.timeline.unit}`}
                       </span>
-                      <span>{gig.proposals} proposals</span>
-                      <span>Posted: {gig.createdAt}</span>
+                      <span>{job.proposals?.count || 0} proposals</span>
+                      <span>Posted: {new Date(job.createdAt).toLocaleDateString()}</span>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {gig.skills.map(skill => (
+                      {job.skills.map(skill => (
                         <Badge key={skill} variant="secondary" className="text-xs">{skill}</Badge>
                       ))}
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 pt-4 border-t">
-                  <Button variant="outline" size="sm" onClick={() => handleViewProposals(gig)} className="flex items-center gap-1">
+                  <Button variant="outline" size="sm" onClick={() => handleViewProposals(job)} className="flex items-center gap-1">
                     <Eye className="h-4 w-4" />
-                    View Proposals ({gig.proposals})
+                    View Proposals ({job.proposals?.count || 0})
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => handleManageGig(gig)} className="flex items-center gap-1">
+                  <Button variant="outline" size="sm" onClick={() => handleManageGig(job)} className="flex items-center gap-1">
                     <Edit className="h-4 w-4" />
                     Edit Gig
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => handleDeleteGig(gig.id)} className="flex items-center gap-1 text-red-600 hover:text-red-700">
+                  <Button variant="outline" size="sm" onClick={() => handleDeleteGig(job._id)} className="flex items-center gap-1 text-red-600 hover:text-red-700">
                     <Trash2 className="h-4 w-4" />
                     Delete
                   </Button>
@@ -516,7 +479,7 @@ const MyGigs = () => {
             </Card>
           ))}
           
-          {filteredGigs.length === 0 && gigs.length > 0 && (
+          {filteredGigs.length === 0 && myJobs.length > 0 && (
             <div className="text-center py-12 text-muted-foreground">
               <Search className="h-16 w-16 mx-auto mb-4 opacity-50" />
               <p className="text-lg">No gigs match your search criteria.</p>
@@ -527,7 +490,7 @@ const MyGigs = () => {
             </div>
           )}
           
-          {gigs.length === 0 && (
+          {myJobs.length === 0 && (
             <div className="text-center py-12 text-muted-foreground">
               <Briefcase className="h-16 w-16 mx-auto mb-4 opacity-50" />
               <p className="text-lg">No gigs posted yet.</p>
@@ -644,18 +607,30 @@ const MyGigs = () => {
         {/* Proposals Modal */}
         {showProposalsModal && selectedGig && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div className="w-full max-w-6xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
+              <ProposalManagement 
+                job={selectedGig}
+                onClose={() => setShowProposalsModal(false)}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Legacy Proposals Modal - Remove after testing */}
+        {false && showProposalsModal && selectedGig && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
             <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                   <CardTitle>Proposals for "{selectedGig.title}"</CardTitle>
-                  <CardDescription>{getProposalsForGig(selectedGig.id).length} proposals received</CardDescription>
+                  <CardDescription>{getProposalsForGig(parseInt(selectedGig._id)).length} proposals received</CardDescription>
                 </div>
                 <Button variant="ghost" size="icon" onClick={() => setShowProposalsModal(false)}>
                   <X className="h-4 w-4" />
                 </Button>
               </CardHeader>
               <CardContent className="space-y-4">
-                {getProposalsForGig(selectedGig.id).map(proposal => (
+                {getProposalsForGig(parseInt(selectedGig._id)).map(proposal => (
                   <Card key={proposal.id} className="p-4 border-l-4 border-l-primary/20">
                     <div className="flex flex-col lg:flex-row gap-4">
                       <div className="flex-1">
@@ -696,10 +671,10 @@ const MyGigs = () => {
                           onClick={() => handleChat(proposal.freelancerName)}
                           className="flex items-center gap-1"
                         >
-                          <MessageSquare className="h-3 w-3" />
+                          <MessageCircle className="h-3 w-3" />
                           Chat
                         </Button>
-                        {selectedGig.status === 'Open' && (
+                        {selectedGig.status === 'active' && (
                           <Button 
                             size="sm" 
                             onClick={() => handleAcceptProposal(proposal)}
@@ -713,7 +688,7 @@ const MyGigs = () => {
                     </div>
                   </Card>
                 ))}
-                {getProposalsForGig(selectedGig.id).length === 0 && (
+                {getProposalsForGig(parseInt(selectedGig._id)).length === 0 && (
                   <div className="text-center py-8 text-muted-foreground">
                     <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>No proposals received for this gig yet.</p>
@@ -792,10 +767,10 @@ const MyGigs = () => {
                         className="w-full" 
                         onClick={() => handleChat(selectedProposal.freelancerName)}
                       >
-                        <MessageSquare className="h-4 w-4 mr-2" />
+                        <MessageCircle className="h-4 w-4 mr-2" />
                         Start Chat
                       </Button>
-                      {selectedGig?.status === 'Open' && (
+                      {selectedGig?.status === 'active' && (
                         <Button 
                           className="w-full" 
                           variant="outline"
@@ -850,24 +825,71 @@ const MyGigs = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="post-budget">Budget (AVAX)</Label>
-                  <Input
-                    id="post-budget"
-                    type="number"
-                    step="0.0001"
-                    placeholder="0.0000"
-                    value={postGigFormData.budget}
-                    onChange={(e) => setPostGigFormData(prev => ({ ...prev, budget: e.target.value }))}
-                  />
+                  <Label htmlFor="post-budget">Budget Amount</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="post-budget"
+                      type="number"
+                      step="0.0001"
+                      min="1"
+                      placeholder="0.0000"
+                      value={postGigFormData.budget}
+                      onChange={(e) => setPostGigFormData(prev => ({ ...prev, budget: e.target.value }))}
+                      className="flex-1"
+                    />
+                    <Select value={postGigFormData.currency} onValueChange={(value) => setPostGigFormData(prev => ({ ...prev, currency: value }))}>
+                      <SelectTrigger className="w-24">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="AVAX">AVAX</SelectItem>
+                        <SelectItem value="USD">USD</SelectItem>
+                        <SelectItem value="EUR">EUR</SelectItem>
+                        <SelectItem value="ETH">ETH</SelectItem>
+                        <SelectItem value="BTC">BTC</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="post-timeline">Timeline</Label>
+                  <Label htmlFor="post-budget-type">Budget Type</Label>
+                  <Select value={postGigFormData.budgetType} onValueChange={(value) => setPostGigFormData(prev => ({ ...prev, budgetType: value }))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="fixed">Fixed Price</SelectItem>
+                      <SelectItem value="hourly">Hourly Rate</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="post-timeline">Timeline Duration</Label>
                   <Input
                     id="post-timeline"
-                    placeholder="e.g., 2 weeks"
+                    type="number"
+                    min="1"
+                    placeholder="e.g., 2"
                     value={postGigFormData.timeline}
                     onChange={(e) => setPostGigFormData(prev => ({ ...prev, timeline: e.target.value }))}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="post-timeline-unit">Timeline Unit</Label>
+                  <Select value={postGigFormData.timelineUnit} onValueChange={(value) => setPostGigFormData(prev => ({ ...prev, timelineUnit: value }))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="hours">Hours</SelectItem>
+                      <SelectItem value="days">Days</SelectItem>
+                      <SelectItem value="weeks">Weeks</SelectItem>
+                      <SelectItem value="months">Months</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -878,12 +900,18 @@ const MyGigs = () => {
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Web Development">Web Development</SelectItem>
-                    <SelectItem value="Blockchain Development">Blockchain Development</SelectItem>
-                    <SelectItem value="Mobile Development">Mobile Development</SelectItem>
-                    <SelectItem value="Smart Contracts">Smart Contracts</SelectItem>
-                    <SelectItem value="UI/UX Design">UI/UX Design</SelectItem>
-                    <SelectItem value="Data Science">Data Science</SelectItem>
+                    <SelectItem value="web-development">Web Development</SelectItem>
+                    <SelectItem value="blockchain-development">Blockchain Development</SelectItem>
+                    <SelectItem value="mobile-development">Mobile Development</SelectItem>
+                    <SelectItem value="ui-ux-design">UI/UX Design</SelectItem>
+                    <SelectItem value="graphic-design">Graphic Design</SelectItem>
+                    <SelectItem value="content-writing">Content Writing</SelectItem>
+                    <SelectItem value="marketing">Marketing</SelectItem>
+                    <SelectItem value="data-science">Data Science</SelectItem>
+                    <SelectItem value="ai-ml">AI/ML</SelectItem>
+                    <SelectItem value="devops">DevOps</SelectItem>
+                    <SelectItem value="consulting">Consulting</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -899,62 +927,227 @@ const MyGigs = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="post-experience">Experience Level</Label>
-                <Select value={postGigFormData.experience} onValueChange={(value) => setPostGigFormData(prev => ({ ...prev, experience: value }))}>
+                <Label htmlFor="post-experience">Experience Level Required</Label>
+                <Select value={postGigFormData.experienceLevel} onValueChange={(value) => setPostGigFormData(prev => ({ ...prev, experienceLevel: value }))}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select experience level" />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Entry Level">Entry Level</SelectItem>
-                    <SelectItem value="Intermediate">Intermediate</SelectItem>
-                    <SelectItem value="Expert">Expert</SelectItem>
+                    <SelectItem value="entry">Entry Level</SelectItem>
+                    <SelectItem value="intermediate">Intermediate</SelectItem>
+                    <SelectItem value="expert">Expert</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="post-location">Work Location</Label>
+                <Select value={postGigFormData.locationType} onValueChange={(value) => setPostGigFormData(prev => ({ ...prev, locationType: value }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="remote">Remote</SelectItem>
+                    <SelectItem value="onsite">On-site</SelectItem>
+                    <SelectItem value="hybrid">Hybrid</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {postGigFormData.locationType !== 'remote' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="post-city">City</Label>
+                    <Input
+                      id="post-city"
+                      placeholder="e.g., New York"
+                      value={postGigFormData.city}
+                      onChange={(e) => setPostGigFormData(prev => ({ ...prev, city: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="post-country">Country</Label>
+                    <Input
+                      id="post-country"
+                      placeholder="e.g., United States"
+                      value={postGigFormData.country}
+                      onChange={(e) => setPostGigFormData(prev => ({ ...prev, country: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="post-urgency">Project Urgency</Label>
+                <Select value={postGigFormData.urgency} onValueChange={(value) => setPostGigFormData(prev => ({ ...prev, urgency: value }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low - Flexible timeline</SelectItem>
+                    <SelectItem value="medium">Medium - Standard timeline</SelectItem>
+                    <SelectItem value="high">High - Urgent delivery needed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-4">
+                <Label>Additional Requirements</Label>
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="portfolio-required"
+                      checked={postGigFormData.portfolioRequired}
+                      onChange={(e) => setPostGigFormData(prev => ({ ...prev, portfolioRequired: e.target.checked }))}
+                      className="rounded"
+                    />
+                    <Label htmlFor="portfolio-required" className="text-sm font-normal">
+                      Portfolio submission required
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="test-required"
+                      checked={postGigFormData.testRequired}
+                      onChange={(e) => setPostGigFormData(prev => ({ ...prev, testRequired: e.target.checked }))}
+                      className="rounded"
+                    />
+                    <Label htmlFor="test-required" className="text-sm font-normal">
+                      Skills test required
+                    </Label>
+                  </div>
+                </div>
               </div>
 
               <div className="flex gap-3 pt-4">
                 <Button
                   className="flex-1"
-                  onClick={() => {
-                    if (!postGigFormData.title || !postGigFormData.description || !postGigFormData.budget || !postGigFormData.category) {
+                  onClick={async () => {
+                    // Validate required fields
+                    if (!postGigFormData.title || postGigFormData.title.length < 10) {
                       toast({
-                        title: "Missing Information",
-                        description: "Please fill in all required fields.",
+                        title: "Invalid Title",
+                        description: "Job title must be at least 10 characters long.",
                         variant: "destructive",
                       });
                       return;
                     }
 
-                    const newGig: Gig = {
-                      id: Math.max(...gigs.map(g => g.id)) + 1,
-                      title: postGigFormData.title,
-                      description: postGigFormData.description,
-                      budget: postGigFormData.budget,
-                      timeline: postGigFormData.timeline,
-                      skills: postGigFormData.skills.split(',').map(s => s.trim()),
-                      category: postGigFormData.category,
-                      proposals: 0,
-                      status: "Open",
-                      createdAt: new Date().toISOString().split('T')[0]
-                    };
+                    if (!postGigFormData.description || postGigFormData.description.length < 50) {
+                      toast({
+                        title: "Invalid Description",
+                        description: "Job description must be at least 50 characters long.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
 
-                    setGigs(prev => [newGig, ...prev]);
-                    
-                    toast({
-                      title: "Gig Posted Successfully",
-                      description: `Your gig "${postGigFormData.title}" has been posted and is now live.`,
-                    });
+                    if (!postGigFormData.budget || parseFloat(postGigFormData.budget) < 1) {
+                      toast({
+                        title: "Invalid Budget",
+                        description: "Budget amount must be at least 1.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
 
-                    setPostGigFormData({
-                      title: '',
-                      description: '',
-                      budget: '',
-                      timeline: '',
-                      skills: '',
-                      category: '',
-                      experience: ''
-                    });
-                    setShowPostGigModal(false);
+                    if (!postGigFormData.category) {
+                      toast({
+                        title: "Missing Category",
+                        description: "Please select a job category.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
+                    if (!postGigFormData.skills || postGigFormData.skills.trim().length === 0) {
+                      toast({
+                        title: "Missing Skills",
+                        description: "Please specify at least one required skill.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
+                    if (!postGigFormData.timeline || parseInt(postGigFormData.timeline) < 1) {
+                      toast({
+                        title: "Invalid Timeline",
+                        description: "Timeline duration must be at least 1.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
+                    try {
+                      const skillsArray = postGigFormData.skills.split(',').map(s => s.trim()).filter(s => s.length > 0);
+                      
+                      if (skillsArray.length > 20) {
+                        toast({
+                          title: "Too Many Skills",
+                          description: "Cannot have more than 20 skills.",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+
+                      const jobData = {
+                        title: postGigFormData.title.trim(),
+                        description: postGigFormData.description.trim(),
+                        category: postGigFormData.category,
+                        skills: skillsArray,
+                        budget: {
+                          type: postGigFormData.budgetType as 'fixed' | 'hourly',
+                          amount: parseFloat(postGigFormData.budget),
+                          currency: postGigFormData.currency
+                        },
+                        timeline: {
+                          duration: parseInt(postGigFormData.timeline),
+                          unit: postGigFormData.timelineUnit as 'hours' | 'days' | 'weeks' | 'months'
+                        },
+                        requirements: {
+                          experienceLevel: postGigFormData.experienceLevel as 'entry' | 'intermediate' | 'expert',
+                          portfolioRequired: postGigFormData.portfolioRequired,
+                          testRequired: postGigFormData.testRequired
+                        },
+                        location: {
+                          type: postGigFormData.locationType as 'remote' | 'onsite' | 'hybrid',
+                          ...(postGigFormData.locationType !== 'remote' && {
+                            city: postGigFormData.city.trim() || undefined,
+                            country: postGigFormData.country.trim() || undefined
+                          })
+                        },
+                        urgency: postGigFormData.urgency as 'low' | 'medium' | 'high',
+                        status: 'active' as const,
+                        visibility: 'public' as const
+                      };
+
+                      await createJob(jobData);
+                      // Success toast is handled in the hook
+
+                      setPostGigFormData({
+                        title: '',
+                        description: '',
+                        budget: '',
+                        budgetType: 'fixed',
+                        currency: 'AVAX',
+                        timeline: '',
+                        timelineUnit: 'weeks',
+                        skills: '',
+                        category: '',
+                        experienceLevel: 'intermediate',
+                        locationType: 'remote',
+                        city: '',
+                        country: '',
+                        portfolioRequired: false,
+                        testRequired: false,
+                        urgency: 'medium'
+                      });
+                      setShowPostGigModal(false);
+                    } catch (error) {
+                      console.error('Failed to create job:', error);
+                    }
                   }}
                 >
                   Post Gig

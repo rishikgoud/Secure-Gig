@@ -8,15 +8,14 @@ const ManageGig = () => {
 
   const navLinks = [
     { href: dashboardHome, label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/gigs', label: 'My Gigs', icon: Briefcase },
-    { href: '/proposals', label: 'Proposals', icon: FileText },
-    { href: '/contracts', label: 'Contracts', icon: Shield },
-    { href: '/chat', label: 'Messages', icon: MessageSquare },
+    { href: '/find-gigs', label: 'Find Gigs', icon: Briefcase },
+    { href: '/my-proposals', label: 'My Proposals', icon: FileText },
+    { href: '/my-contracts', label: 'My Contracts', icon: Shield },
     { href: '/settings', label: 'Settings', icon: Settings },
   ];
 
   return (
-    <DashboardLayout navLinks={navLinks} userName="CryptoKing.eth" userRole={userRole}>
+    <DashboardLayout navLinks={navLinks}>
       <div className="space-y-8">
         <h1 className="text-3xl font-bold">Manage Gig</h1>
         <Card>

@@ -18,6 +18,7 @@ import {
   jobIdParamSchema 
 } from "../utils/validators";
 import { logger } from "../config/logger";
+import { env } from "../config/env";
 
 export const escrow = Router();
 
@@ -33,8 +34,8 @@ escrow.post("/quote/deposit", async (req, res, next) => {
       body.decimals
     );
     res.json(estimate);
-  } catch (error) {
-    logger.error('Error getting deposit quote:', error);
+  } catch (error: unknown) {
+    logger.error('Error getting deposit quote:', error as Record<string, any>);
     next(error);
   }
 });
@@ -45,8 +46,8 @@ escrow.post("/quote/release", async (req, res, next) => {
     const body = releaseRequestSchema.parse(req.body);
     const estimate = await estimateReleaseGas(body.from, body.jobId);
     res.json(estimate);
-  } catch (error) {
-    logger.error('Error getting release quote:', error);
+  } catch (error: unknown) {
+    logger.error('Error getting release quote:', error as Record<string, any>);
     next(error);
   }
 });
@@ -57,8 +58,8 @@ escrow.post("/quote/dispute", async (req, res, next) => {
     const body = disputeRequestSchema.parse(req.body);
     const estimate = await estimateDisputeGas(body.from, body.jobId, body.reason);
     res.json(estimate);
-  } catch (error) {
-    logger.error('Error getting dispute quote:', error);
+  } catch (error: unknown) {
+    logger.error('Error getting release calldata:', error as Record<string, any>);
     next(error);
   }
 });
@@ -76,7 +77,7 @@ escrow.post("/relay/deposit", async (req, res, next) => {
     const txHash = await relayDeposit(body.jobId, body.token, body.amount, body.decimals);
     res.json({ txHash });
   } catch (error) {
-    logger.error('Error relaying deposit:', error);
+    logger.error('Error relaying deposit:', error as Record<string, any>);
     next(error);
   }
 });
@@ -87,7 +88,7 @@ escrow.post("/relay/release", async (req, res, next) => {
     const txHash = await relayRelease(body.jobId);
     res.json({ txHash });
   } catch (error) {
-    logger.error('Error relaying release:', error);
+    logger.error('Error relaying release:', error as Record<string, any>);
     next(error);
   }
 });
@@ -102,7 +103,7 @@ escrow.post("/relay/dispute", async (req, res, next) => {
     const txHash = await relayDispute(body.jobId, body.reason);
     res.json({ txHash });
   } catch (error) {
-    logger.error('Error relaying dispute:', error);
+    logger.error('Error relaying dispute:', error as Record<string, any>);
     next(error);
   }
 });
@@ -113,8 +114,8 @@ escrow.get("/job/:jobId", async (req, res, next) => {
     const { jobId } = jobIdParamSchema.parse(req.params);
     const jobState = await getJobState(jobId);
     res.json(jobState);
-  } catch (error) {
-    logger.error('Error getting job state:', error);
+  } catch (error: unknown) {
+    logger.error('Error getting deposit calldata:', error as Record<string, any>);
     next(error);
   }
 });

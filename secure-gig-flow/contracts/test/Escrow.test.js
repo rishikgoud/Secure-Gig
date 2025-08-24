@@ -19,9 +19,9 @@ describe("Escrow Contract", function () {
     await daoToken.waitForDeployment();
     daoTokenAddress = await daoToken.getAddress();
 
-    // Deploy Escrow
-    const Escrow = await ethers.getContractFactory("Escrow");
-    escrow = await Escrow.deploy(owner.address, feeRecipient.address);
+    // Deploy GigEscrow
+    const GigEscrow = await ethers.getContractFactory("GigEscrow");
+    escrow = await GigEscrow.deploy(owner.address, feeRecipient.address);
     await escrow.waitForDeployment();
     escrowAddress = await escrow.getAddress();
 
@@ -31,7 +31,7 @@ describe("Escrow Contract", function () {
     await escrowDAO.waitForDeployment();
     escrowDAOAddress = await escrowDAO.getAddress();
 
-    // Set DAO contract in Escrow
+    // Set DAO contract in GigEscrow
     await escrow.setDAOContract(escrowDAOAddress);
   });
 

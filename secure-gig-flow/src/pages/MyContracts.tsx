@@ -14,7 +14,6 @@ import {
   LayoutDashboard, 
   Search,
   FileText, 
-  MessageSquare, 
   Shield, 
   Settings,
   Clock,
@@ -48,7 +47,7 @@ const MyContracts = () => {
   
   const userData = getUserData();
   const userName = userData?.name || 'Freelancer';
-  const userAvatar = userData?.avatar || '👨‍💻';
+  const userAvatar = userData?.avatar || '';
   const { toast } = useToast();
 
   const navLinks = [
@@ -56,7 +55,6 @@ const MyContracts = () => {
     { href: '/find-gigs', label: 'Find Gigs', icon: Search },
     { href: '/my-proposals', label: 'My Proposals', icon: FileText },
     { href: '/my-contracts', label: 'My Contracts', icon: Shield },
-    { href: '/chat', label: 'Messages', icon: MessageSquare },
     { href: '/settings', label: 'Settings', icon: Settings },
   ];
 
@@ -154,7 +152,7 @@ const MyContracts = () => {
   };
 
   return (
-    <DashboardLayout navLinks={navLinks} userName={userName} userRole="Freelancer" userAvatar={userAvatar}>
+    <DashboardLayout navLinks={navLinks}>
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">My Contracts</h1>

@@ -10,8 +10,8 @@ tx.get("/:hash", async (req, res, next) => {
     const { hash } = txHashParamSchema.parse(req.params);
     const transactionDetails = await getTx(hash);
     res.json(transactionDetails);
-  } catch (error) {
-    logger.error('Error getting transaction:', error);
+  } catch (error: unknown) {
+    logger.error('Error getting transaction:', error as Record<string, any>);
     next(error);
   }
 });
@@ -21,8 +21,8 @@ tx.get("/:hash/status", async (req, res, next) => {
     const { hash } = txHashParamSchema.parse(req.params);
     const status = await getTransactionStatus(hash);
     res.json(status);
-  } catch (error) {
-    logger.error('Error getting transaction status:', error);
+  } catch (error: unknown) {
+    logger.error('Error getting transaction status:', error as Record<string, any>);
     next(error);
   }
 });
@@ -35,8 +35,8 @@ tx.post("/:hash/wait", async (req, res, next) => {
     
     const receipt = await waitForTransaction(hash, confirmations, timeout);
     res.json(receipt);
-  } catch (error) {
-    logger.error('Error waiting for transaction:', error);
+  } catch (error: unknown) {
+    logger.error('Error waiting for transaction:', error as Record<string, any>);
     next(error);
   }
 });

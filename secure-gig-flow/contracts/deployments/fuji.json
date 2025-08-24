@@ -1,0 +1,11 @@
+{
+  "network": "fuji",
+  "chainId": 43113,
+  "contracts": {
+    "GigEscrow": "0x7B7781187eff5d5D6c75154282DF57882f2fDfAB",
+    "DAOToken": "0xB57FBeF85bD1A1643eF9EA3734DAe65494246247",
+    "EscrowDAO": "0x49E4B659f5A4F9BFB34347c5e95f606425E8AD32"
+  },
+  "deployer": "0x2a2B2968bbFEcC4E8D6f0bA21448C0Ad91595d30",
+  "deployedAt": "2025-08-23T18:57:01.434Z"
+}

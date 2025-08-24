@@ -29,10 +29,9 @@ const Proposals = () => {
 
   const navLinks = [
     { href: '/client-dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/gigs', label: 'My Gigs', icon: Briefcase },
-    { href: '/proposals', label: 'Proposals', icon: FileText },
-    { href: '/contracts', label: 'Contracts', icon: Shield },
-    { href: '/chat', label: 'Messages', icon: MessageSquare },
+    { href: '/find-gigs', label: 'Find Gigs', icon: Briefcase },
+    { href: '/my-proposals', label: 'Proposals', icon: FileText },
+    { href: '/my-contracts', label: 'Contracts', icon: Shield },
     { href: '/settings', label: 'Settings', icon: Settings },
   ];
 
@@ -96,7 +95,7 @@ const Proposals = () => {
   };
 
   return (
-    <DashboardLayout navLinks={navLinks} userName="CryptoKing.eth" userRole="Client" walletAddress="0x1234567890abcdef1234567890abcdef12345678">
+    <DashboardLayout navLinks={navLinks}>
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-4xl font-heading font-bold text-gradient-primary mb-4">

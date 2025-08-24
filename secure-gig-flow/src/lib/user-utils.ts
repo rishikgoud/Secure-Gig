@@ -14,6 +14,8 @@ export interface UserData {
     accountType?: string;
     experienceLevel?: string;
     portfolioLinks?: string[];
+    walletBalance?: number;
+    escrowBalance?: number;
   }
   
   export const getUserData = (): UserData => {
@@ -30,7 +32,9 @@ export interface UserData {
         website: data.website,
         companyName: data.companyName,
         industry: data.industry,
-        accountType: data.accountType
+        accountType: data.accountType,
+        walletBalance: data.walletBalance,
+        escrowBalance: data.escrowBalance
       };
     }
   
@@ -48,7 +52,9 @@ export interface UserData {
         skills: data.skills,
         hourlyRate: data.hourlyRate,
         experienceLevel: data.experienceLevel,
-        portfolioLinks: data.portfolioLinks
+        portfolioLinks: data.portfolioLinks,
+        walletBalance: data.walletBalance,
+        escrowBalance: data.escrowBalance
       };
     }
   
@@ -57,7 +63,9 @@ export interface UserData {
     return {
       name: isClient ? 'CryptoKing.eth' : 'Alex.eth',
       avatar: isClient ? '🤴' : '🚀',
-      role: isClient ? 'Client' : 'Freelancer'
+      role: isClient ? 'Client' : 'Freelancer',
+      walletBalance: 5.2500, // Default balance
+      escrowBalance: 0 // Default escrow balance
     };
   };
   
@@ -74,7 +82,9 @@ export interface UserData {
         website: updatedData.website,
         companyName: updatedData.companyName,
         industry: updatedData.industry,
-        accountType: updatedData.accountType
+        accountType: updatedData.accountType,
+        walletBalance: updatedData.walletBalance,
+        escrowBalance: updatedData.escrowBalance
       };
       localStorage.setItem('clientData', JSON.stringify(clientData));
     } else {
@@ -87,12 +97,58 @@ export interface UserData {
         skills: updatedData.skills,
         hourlyRate: updatedData.hourlyRate,
         experienceLevel: updatedData.experienceLevel,
-        portfolioLinks: updatedData.portfolioLinks
+        portfolioLinks: updatedData.portfolioLinks,
+        walletBalance: updatedData.walletBalance,
+        escrowBalance: updatedData.escrowBalance
       };
       localStorage.setItem('freelancerData', JSON.stringify(freelancerData));
     }
   };
   
+  // Wallet and Escrow Management
+  export const getStoredWalletBalance = (): number => {
+    const userData = getUserData();
+    return userData.walletBalance || 5.2500; // Default balance
+  };
+
+  export const getStoredEscrowBalance = (): number => {
+    const userData = getUserData();
+    return userData.escrowBalance || 0; // Default escrow balance
+  };
+
+  export const updateWalletBalance = (newBalance: number) => {
+    const currentData = getUserData();
+    updateUserData({ ...currentData, walletBalance: newBalance });
+  };
+
+  export const updateEscrowBalance = (newEscrowBalance: number) => {
+    const currentData = getUserData();
+    updateUserData({ ...currentData, escrowBalance: newEscrowBalance });
+  };
+
+  export const hireFreelancer = (contractAmount: number) => {
+    const currentWallet = getStoredWalletBalance();
+    const currentEscrow = getStoredEscrowBalance();
+    
+    if (currentWallet >= contractAmount) {
+      // Deduct from wallet and add to escrow
+      updateWalletBalance(currentWallet - contractAmount);
+      updateEscrowBalance(currentEscrow + contractAmount);
+      return { success: true, newWallet: currentWallet - contractAmount, newEscrow: currentEscrow + contractAmount };
+    }
+    return { success: false, error: 'Insufficient wallet balance' };
+  };
+
+  export const releaseEscrowFunds = (releaseAmount: number) => {
+    const currentEscrow = getStoredEscrowBalance();
+    
+    if (currentEscrow >= releaseAmount) {
+      updateEscrowBalance(currentEscrow - releaseAmount);
+      return { success: true, newEscrow: currentEscrow - releaseAmount };
+    }
+    return { success: false, error: 'Insufficient escrow balance' };
+  };
+
   // Get actual wallet balance from connected wallet
   export const getWalletBalance = async (): Promise<number> => {
     try {
@@ -118,4 +174,3 @@ export interface UserData {
       return 0;
     }
   };
-  
